@@ -1,0 +1,1 @@
+#define CONTROL_TYPE="peak_shave" //Comment this out if uncontrolled mode
