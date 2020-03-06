@@ -5,7 +5,7 @@ Docker tag: `latest`
 
 Command to get the docker image: `docker pull slacgismo/gridlabd:latest`
 
-To run the simulation: `docker run -itv [path to model file]/model:/model slacgismo/gridlabd/latest`
+To run the simulation: `docker run -itv [path to model file]:/model slacgismo/gridlabd:latest`
 
 This will create a new linux container based on the image specified. You will now be in the /tmp folder of the container 
 
