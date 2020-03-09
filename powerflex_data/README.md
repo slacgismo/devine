@@ -4,6 +4,7 @@ This folder contains the code for data collection from powerflex.
 # Getting Setup
 
 ## Create a file in this folder called config.py
+Add your powernet username and password as follows
 ```
 # config.py
 username = (your_username)
