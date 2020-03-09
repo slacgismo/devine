@@ -12,5 +12,5 @@ password = (your_password)
 
 ## Running Locally
 ```
-python interval_data_collection.py
+python data_collection.py
 ```
