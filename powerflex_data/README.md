@@ -3,15 +3,28 @@ This folder contains the code for data collection from powerflex.
 
 # Getting Setup
 
-## Create a file in this folder called config.py
-Add your powernet username and password as follows
+## Creating the env - ensure you are running the anaconda `4.5.x +`
 ```
-# config.py
-username = (your_username)
-password = (your_password)
+conda env create -f environment.yml
 ```
 
-## Running Locally
+## Updating the env after adding new packages
 ```
-python data_collection.py
+conda env update -f environment.yml
+```
+
+## Starting the env
+```
+conda activate powerflex_data_env
+```
+
+## Stopping the env
+```
+conda deactivate
+```
+
+## Running Script
+Use username and password for powerflex login as arugments
+```
+python data_collection.py {username} {password}
 ```
