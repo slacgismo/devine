@@ -18,6 +18,7 @@ URL_ARCH2 = "https://archive.powerflex.com/get_csh/0032/02"
 URL_LOGIN = "https://slac.powerflex.com:9443/login"
 URL_ARCHIVE = "https://archive.powerflex.com/login"
 
+
 def login_request(r):
     token = r.json()["access_token"]
     auth_token = f"Bearer {token}"
@@ -50,13 +51,24 @@ def interval_data_collection(start, end, headers):
 
 def session_data_collection(start, end, headers):
     data = json.dumps({"startTime": start, "stopTime": end, "filterBy":
-                          "sessionStopTime", "anonymize": True})
+                       "sessionStopTime", "anonymize": True})
     df1 = pd.DataFrame(data_request(URL_ARCH1, headers, data)["sessions"])
     df2 = pd.DataFrame(data_request(URL_ARCH2, headers, data)["sessions"])
     return df1, df2
 
 
-def save_to_s3(df, type, year, month, day):
+def date_generator(delta):
+    d = datetime.datetime.today() - datetime.timedelta(days=delta)
+    month = d.month
+    day = d.day
+    year = d.year
+    return (month, day, year)
+
+
+def save_to_s3(df, type, delta):
+    # delta determines how many days ago
+    month, day, year = date_generator(delta)
+
     s3_resource = boto3.resource("s3")
     csv_buffer = StringIO()
     pd.DataFrame(data=df).to_csv(csv_buffer)
@@ -65,21 +77,18 @@ def save_to_s3(df, type, year, month, day):
                        Body=csv_buffer.getvalue())
 
 
+def timestamp_generator(delta, hour_start, hour_end):
+    # delta determines how many days ago
+    month, day, year = date_generator(delta)
+
+    start = int(datetime.datetime(year, int(month), int(day), hour_start, 0).timestamp())
+    end = int(datetime.datetime(year, int(month), int(day), hour_end, 0).timestamp())
+    return start, end
+
+
 def main(username, password):
     # headers_meas and headers used for calling data_collection functions
     headers_meas, headers = api_login(username, password)
-    # interval data collection - previous days data
-    d_int = datetime.datetime.today() - datetime.timedelta(days=1)
-    month_int = d_int.month
-    day_int = d_int.day
-    year_int = d_int.year
-
-    # session data collection - data from 10 days ago
-    # data is updated in 7 day intervals on powerflex's side
-    d_ses = datetime.datetime.today() - datetime.timedelta(days=10)
-    month_ses = d_ses.month
-    day_ses = d_ses.day
-    year_ses = d_ses.year
 
     df_int = pd.DataFrame()
     df_ses_1 = pd.DataFrame()
@@ -90,25 +99,22 @@ def main(username, password):
     hour_sets = [[0, 11], [12, 23]]
 
     for hour_set in hour_sets:
-        start_int = int(datetime.datetime(2020, int(month_int), int(day_int),
-                        hour_set[0], 0).timestamp())
-        end_int = int(datetime.datetime(2020, int(month_int), int(day_int),
-                      hour_set[1], 0).timestamp())
+        # interval data collection - previous days data
+        start_int, end_int = timestamp_generator(1, hour_set[0], hour_set[1])
         df_int = df_int.append(interval_data_collection(start_int, end_int,
                                headers_meas))
 
-        start_ses = int(datetime.datetime(2020, int(month_ses), int(day_ses),
-                        hour_set[0], 0).timestamp())
-        end_ses = int(datetime.datetime(2020, int(month_ses), int(day_ses),
-                      hour_set[1], 0).timestamp())
+        # session data collection - data from 10 days ago
+        # data is updated in 7 day intervals on powerflex's side
+        start_ses, end_ses = timestamp_generator(10, hour_set[0], hour_set[1])
         df1, df2 = session_data_collection(start_ses, end_ses, headers)
 
         df_ses_1 = df_ses_1.append(df1)
         df_ses_2 = df_ses_2.append(df2)
 
-    save_to_s3(df_int, "interval", year_int, month_int, day_int)
-    save_to_s3(df_ses_1, "session", year_ses, month_ses, day_ses)
-    save_to_s3(df_ses_2, "session", year_ses, month_ses, day_ses)
+    save_to_s3(df_int, "interval", 1)
+    save_to_s3(df_ses_1, "session", 10)
+    save_to_s3(df_ses_2, "session", 10)
 
 
 if __name__ == "__main__":
