@@ -12,4 +12,3 @@ dependencies:
   - python-dateutil=2.8.1=py_0
   - requests=2.22.0=py38_1
   - s3fs=0.4.0=py_0
-prefix: ~/miniconda3/envs/powerflex_data_env
