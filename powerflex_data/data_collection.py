@@ -7,7 +7,6 @@ import time
 import datetime
 import sys
 from io import StringIO
-import boto3
 
 # url for interval data
 URL_MEASUREMENT = "https://slac.powerflex.com:9443/get_measurement_data"
@@ -19,47 +18,41 @@ URL_ARCH2 = "https://archive.powerflex.com/get_csh/0032/02"
 URL_LOGIN = "https://slac.powerflex.com:9443/login"
 URL_ARCHIVE = "https://archive.powerflex.com/login"
 
+def login_request(r):
+    token = r.json()["access_token"]
+    auth_token = f"Bearer {token}"
+    headers = {"cache-control": "no-cache", "content-type": "application/json",
+               "Authorization": auth_token}
+    return(headers)
+
+
+def data_request(url, headers, data):
+    r = requests.post(url, headers=headers, data=data)
+    return(r.json())
+
+
 def api_login(username, password):
     data_login = json.dumps({"username": username, "password": password})
-    headers = {'cache-control': 'no-cache', 'content-type': 'application/json'}
-
-    resp_login = requests.post(URL_LOGIN, headers=headers, data=data_login)
-    resp_archive = requests.post(URL_ARCHIVE, headers=headers, data=data_login)
-
-    token_meas = json.loads(resp_login.text)["access_token"]
-    auth_token_meas = "Bearer " + token_meas
-    headers_meas = {"cache-control": "no-cache", "content-type":
-                    "application/json", "Authorization": auth_token_meas}
-
-    token_arch = json.loads(resp_archive.text)["access_token"]
-    auth_token_arch = "Bearer " + token_arch
-    headers = {"cache-control": "no-cache", "content-type": "application/json",
-               "Authorization": auth_token_arch}
-    return (headers_meas, headers)
+    headers = {"cache-control": "no-cache", "content-type": "application/json"}
+    r_login = requests.post(URL_LOGIN, headers=headers, data=data_login)
+    r_archive = requests.post(URL_ARCHIVE, headers=headers, data=data_login)
+    return (login_request(r_login), login_request(r_archive))
 
 
-def interval_data_collection(start, end, headers_meas):
-    data_meas = json.dumps({"measurement": "ct_response",
-                            "time_filter": [start, end]})
-    r = requests.post(URL_MEASUREMENT, headers=headers_meas, data=data_meas)
-    data = json.loads(r.text)
-    return(pd.DataFrame(data=data["data"]["results"][0]["series"][0]["values"],
-                        columns=data["data"]["results"][0]["series"][0]
-                        ["columns"]))
+def interval_data_collection(start, end, headers):
+    data = json.dumps({"measurement": "ct_response",
+                       "time_filter": [start, end]})
+    data = data_request(URL_MEASUREMENT, headers, data)
+    df = pd.DataFrame(data=data["data"]["results"][0]["series"][0]["values"],
+                      columns=data["data"]["results"][0]["series"][0]["columns"])
+    return(df)
 
 
 def session_data_collection(start, end, headers):
-    # 2 different charging stations
-    data_meas = json.dumps({"measurement": "ct_response", "time_filter":
-                            [start, end]})
-    data_in = json.dumps({"startTime": start, "stopTime": end, "filterBy":
+    data = json.dumps({"startTime": start, "stopTime": end, "filterBy":
                           "sessionStopTime", "anonymize": True})
-    r1 = requests.post(URL_ARCH1, headers=headers, data=data_in)
-    r2 = requests.post(URL_ARCH2, headers=headers, data=data_in)
-    data1 = json.loads(r1.text)
-    df1 = pd.DataFrame(data1["sessions"])
-    data2 = json.loads(r2.text)
-    df2 = pd.DataFrame(data2["sessions"])
+    df1 = pd.DataFrame(data_request(URL_ARCH1, headers, data)["sessions"])
+    df2 = pd.DataFrame(data_request(URL_ARCH2, headers, data)["sessions"])
     return df1, df2
 
 

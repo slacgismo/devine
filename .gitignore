@@ -1,7 +1,3 @@
-# username / password
-config.py
-./powerflex_data/config.py
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
