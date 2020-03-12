@@ -26,5 +26,5 @@ conda deactivate
 ## Running Script
 Use username and password for powerflex login as arugments
 ```
-python data_collection.py {username} {password}
+python ingest.py {username} {password}
 ```
