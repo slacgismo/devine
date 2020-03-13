@@ -56,36 +56,42 @@ def set_authentication_headers(token):
     return headers
 
 
+def get_date_obj_from_offset(d):
+    """
+    Return a date obj calculated from the given offset off of today
+    """
+    return datetime.datetime.today() - datetime.timedelta(days=d)
+
+
 def get_formatted_date_components(d):
     """
     Given a day count offset (as Int), calculate the datetime delta as
     today - given_day_offset. The result we use to tokenize, as strings,
     the Month, Day and Year. That gets returned to the client in a tuple
     """
-    d = datetime.datetime.today() - datetime.timedelta(days=d)
     month = f'{d.month:02}'
     day = f'{d.day:02}'
     year = f'{d.year:04}'
     return month, day, year
 
 
-def get_timestamp(delta, hour_start, hour_end):
+def get_timestamp(d, hour_start, hour_end):
     """
     Given a day offset, retrieve a start and end timestamp (in seconds, since 01.01.1970)
     Return the start and end times as a tuple
     """
     # delta determines how many days ago
-    month, day, year = get_formatted_date_components(delta)
+    month, day, year = get_formatted_date_components(d)
     start = int(datetime.datetime(int(year), int(month), int(day), hour_start, 0).timestamp())
     end = int(datetime.datetime(int(year), int(month), int(day), hour_end, 0).timestamp())
     return start, end
 
 
-def generate_filename_and_path(prefix, data_type, date_offset, suffix, discrete_token=""):
+def generate_filename_and_path(prefix, data_type, dt, suffix, discrete_token=""):
     """
     Return a standard naming convention and S3 path to save files to.
     """
-    m, d, y = get_formatted_date_components(date_offset)
+    m, d, y = get_formatted_date_components(dt)
     return f"debug/{prefix}/{data_type}/{y}-{m}-{d}{discrete_token}.{suffix}"
 
 
@@ -135,7 +141,8 @@ def process_interval_data(headers, intervals):
     pd.DataFrame(data=df).to_csv(csv_buffer, index=False)
     
     # generate a filename and save it to S3
-    filename = generate_filename_and_path("raw", "interval", INTERVAL_DAY_OFFSET, "csv")
+    dt = get_date_obj_from_offset(INTERVAL_DAY_OFFSET)
+    filename = generate_filename_and_path("raw", "interval", dt, "csv")
     save_csv_to_s3(csv_buffer, filename)
 
 
@@ -168,7 +175,8 @@ def process_session_data(headers, intervals):
         pd.DataFrame(data=df).to_csv(csv_buffer, index=False)
         
         # generate a filename and save it to S3
-        filename = generate_filename_and_path("raw", f"session", SESSION_DAY_OFFSET, "csv", str(index))
+        dt = get_date_obj_from_offset(SESSION_DAY_OFFSET)
+        filename = generate_filename_and_path("raw", f"session", dt, "csv", f"-{str(index)}")
         save_csv_to_s3(csv_buffer, filename)
 
 
@@ -201,10 +209,13 @@ def main(username, password):
         powerflex_auth_headers = set_authentication_headers(powerflex_token)
 
         # get the time interval we want to use for the data request, in seconds
-        am_interval = get_timestamp(INTERVAL_DAY_OFFSET, AM_START, AM_END)
-        pm_interval = get_timestamp(INTERVAL_DAY_OFFSET, PM_START, PM_END)
-        am_session = get_timestamp(SESSION_DAY_OFFSET, AM_START, AM_END)
-        pm_session = get_timestamp(SESSION_DAY_OFFSET, PM_START, PM_END)
+        interval_datetime = get_date_obj_from_offset(INTERVAL_DAY_OFFSET)
+        session_datetime = get_date_obj_from_offset(SESSION_DAY_OFFSET)
+        
+        am_interval = get_timestamp(interval_datetime, AM_START, AM_END)
+        pm_interval = get_timestamp(interval_datetime, PM_START, PM_END)
+        am_session = get_timestamp(session_datetime, AM_START, AM_END)
+        pm_session = get_timestamp(session_datetime, PM_START, PM_END)
 
         # lastly, request, process and save the interval and session data
         try:
