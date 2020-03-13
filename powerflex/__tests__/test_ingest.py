@@ -36,7 +36,7 @@ class TestDataIngest(unittest.TestCase):
         self.assertTupleEqual(result, expected_timestamps)
 
     def test_generate_filename(self):
-        expected_filename = "debug/prefix/data_type/2020-01-11-01.csv"
+        expected_filename = "prefix/data_type/2020-01-11-01.csv"
         d = datetime.datetime(year=2020, month=1, day=11)
         result = generate_filename_and_path("prefix", "data_type", d, "csv", "-01")
         self.assertEquals(result, expected_filename)
