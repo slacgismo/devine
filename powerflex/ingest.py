@@ -82,8 +82,10 @@ def get_timestamp(d, hour_start, hour_end):
     """
     # delta determines how many days ago
     month, day, year = get_formatted_date_components(d)
-    start = int(datetime.datetime(int(year), int(month), int(day), hour_start, 0).timestamp())
-    end = int(datetime.datetime(int(year), int(month), int(day), hour_end, 0).timestamp())
+    utc_start = datetime.datetime(int(year), int(month), int(day), hour_start, 0).replace(tzinfo=datetime.timezone.utc)
+    utc_end = datetime.datetime(int(year), int(month), int(day), hour_end, 0).replace(tzinfo=datetime.timezone.utc)
+    start = int(utc_start.timestamp())
+    end = int(utc_end.timestamp())
     return start, end
 
 
@@ -92,7 +94,7 @@ def generate_filename_and_path(prefix, data_type, dt, suffix, discrete_token="")
     Return a standard naming convention and S3 path to save files to.
     """
     m, d, y = get_formatted_date_components(dt)
-    return f"debug/{prefix}/{data_type}/{y}-{m}-{d}{discrete_token}.{suffix}"
+    return f"{prefix}/{data_type}/{y}-{m}-{d}{discrete_token}.{suffix}"
 
 
 def perform_login(url, username, password):

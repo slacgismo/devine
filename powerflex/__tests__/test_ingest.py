@@ -30,8 +30,9 @@ class TestDataIngest(unittest.TestCase):
         start_hour = 0
         end_hour = 23
         d = datetime.datetime(year=2020, month=1, day=11)
+        d = d.replace(tzinfo=datetime.timezone.utc)
         result = get_timestamp(d, start_hour, end_hour)
-        expected_timestamps = (1578729600, 1578812400)
+        expected_timestamps = (1578700800, 1578783600)
         self.assertTupleEqual(result, expected_timestamps)
 
     def test_generate_filename(self):
