@@ -1,5 +1,5 @@
 import unittest
-from ingest import *
+from powerflex.ingest import *
 
 class TestDataIngest(unittest.TestCase):
     def test_base_headers(self):
