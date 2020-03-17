@@ -9,6 +9,8 @@ import pandas as pd
 from io import StringIO
 from botocore.exceptions import ClientError
 
+DEBUG = False
+
 # specify the offset, in days, for the request of interval and session data
 INTERVAL_DAY_OFFSET = 1
 SESSION_DAY_OFFSET = 10
@@ -93,8 +95,9 @@ def generate_filename_and_path(prefix, data_type, dt, suffix, discrete_token="")
     """
     Return a standard naming convention and S3 path to save files to.
     """
+    debug_path = "debug/" if DEBUG else "" 
     m, d, y = get_formatted_date_components(dt)
-    return f"{prefix}/{data_type}/{y}-{m}-{d}{discrete_token}.{suffix}"
+    return f"{debug_path}{prefix}/{data_type}/{y}-{m}-{d}{discrete_token}.{suffix}"
 
 
 def perform_login(url, username, password):
@@ -194,6 +197,8 @@ def save_csv_to_s3(csv_buffer, filename):
 
 
 def main(username, password):
+    print("main", DEBUG)
+    sys.exit()
     try:
         # Login to SLAC and Powerflex and get the respective tokens
         slac_token = perform_login(URLS["SLAC"]["LOGIN"], username, password)
@@ -233,4 +238,5 @@ def main(username, password):
 if __name__ == "__main__":
     username = str(sys.argv[1])
     password = str(sys.argv[2])
+    DEBUG = str(sys.argv[3])
     main(username, password)
