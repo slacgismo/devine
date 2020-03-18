@@ -11,7 +11,9 @@ jobs:
           command: pip install pandas boto3 botocore requests s3fs
       - run: 
           name: Run Unit Tests
-          command: python -m unittest
+          command: |
+            cd powerflex/
+            python -m unittest
           
   deploy:
     docker:
