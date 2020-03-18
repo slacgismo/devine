@@ -1,3 +1,4 @@
+import os
 import sys
 import s3fs
 import json
@@ -234,7 +235,19 @@ def main(username, password):
 
 
 if __name__ == "__main__":
-    username = str(sys.argv[1])
-    password = str(sys.argv[2])
-    DEBUG = str(sys.argv[3])
+    username = os.getenv("USERNAME", None)
+    password = os.getenv("PASSWORD", None)
+    DEBUG = os.getenv("DEBUG", True)
+    
+    if username is None or password is None:
+        print("The username and/or password were not provided")
+        sys.exit()
+
+    if username == "" or password == "":
+        print("The username and/or password are blank")
+        sys.exit()
+
     main(username, password)
+    print("Done")
+    sys.exit()
+    

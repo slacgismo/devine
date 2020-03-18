@@ -1,6 +1,6 @@
 import datetime
 import unittest
-from powerflex.ingest import *
+from ingest import *
 
 class TestDataIngest(unittest.TestCase):
     def test_base_headers(self):
