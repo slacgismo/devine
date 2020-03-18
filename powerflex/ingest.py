@@ -197,8 +197,6 @@ def save_csv_to_s3(csv_buffer, filename):
 
 
 def main(username, password):
-    print("main", DEBUG)
-    sys.exit()
     try:
         # Login to SLAC and Powerflex and get the respective tokens
         slac_token = perform_login(URLS["SLAC"]["LOGIN"], username, password)
