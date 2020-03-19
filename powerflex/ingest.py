@@ -72,7 +72,7 @@ def get_formatted_date_components(d):
     today - given_day_offset. The result we use to tokenize, as strings,
     the Month, Day and Year. That gets returned to the client in a tuple
     """
-    month = f'{d.month:02}'
+    month = f'{d.month:01}'
     day = f'{d.day:02}'
     year = f'{d.year:04}'
     return month, day, year
