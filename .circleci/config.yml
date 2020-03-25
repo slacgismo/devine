@@ -1,19 +1,18 @@
 version: 2.1
 
-base_image: &base_image
-  hashicorp/terraform:light
-
+orbs:
+    terraform: ovotech/terraform@1.6.5
 
 jobs:
   build:
     docker:
-      - image: *base_image
+      - image: circleci/python:3.8
 
     steps:
       - checkout
       - run:
-          name: Check python
-          command: python --version
+          name: Check TF version
+          command: terraform --version
       - run:
           name: Install build dependencies
           command: pip install pandas boto3 botocore requests s3fs
