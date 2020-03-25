@@ -1,10 +1,13 @@
 version: 2.1
-orbs:
-    terraform: devops-workflow/terraform@0.0.1
+
+base_image: &base_image
+  hashicorp/terraform:light
+
+
 jobs:
   build:
     docker:
-      - image: circleci/python:3.8
+      - image: *base_image
 
     steps:
       - checkout
