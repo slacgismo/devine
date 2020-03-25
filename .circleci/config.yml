@@ -11,7 +11,7 @@ jobs:
     steps:
       - checkout
       - terraform/plan:
-          path: powerflex/
+          path: "./powerflex/"
       - run:
           name: Install build dependencies
           command: pip install pandas boto3 botocore requests s3fs
