@@ -21,7 +21,9 @@ jobs:
 
     steps:
       - run: |
-          echo 'run terraform to deploy this out when ready'
+          cd powerflex
+          terraform init
+          terraform plan
 
 workflows:
   version: 2

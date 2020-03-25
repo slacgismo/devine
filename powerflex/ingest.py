@@ -197,7 +197,7 @@ def save_csv_to_s3(csv_buffer, filename):
         print(f"Unexpected client error while communicating with S3 via boto: {e}")
 
 
-def main(username, password):
+def main(username, password, get_interval, get_session):
     try:
         # Login to SLAC and Powerflex and get the respective tokens
         slac_token = perform_login(URLS["SLAC"]["LOGIN"], username, password)
@@ -225,8 +225,13 @@ def main(username, password):
 
         # lastly, request, process and save the interval and session data
         try:
-            process_interval_data(slac_auth_headers, [am_interval, pm_interval])
-            process_session_data(powerflex_auth_headers, [am_session, pm_session])
+            if get_interval:
+                print("Retrieving interval data...")
+                process_interval_data(slac_auth_headers, [am_interval, pm_interval])
+            
+            if get_session:
+                print("Retrieving session data...")
+                process_session_data(powerflex_auth_headers, [am_session, pm_session])
         except ValueError as e:
             print(e)
     
@@ -237,6 +242,8 @@ def main(username, password):
 if __name__ == "__main__":
     username = os.getenv("USERNAME", None)
     password = os.getenv("PASSWORD", None)
+    get_interval = os.getenv("INTERVAL", False)
+    get_session = os.getenv("SESSION", False)
     DEBUG = os.getenv("DEBUG", True)
     
     if username is None or password is None:
@@ -247,7 +254,11 @@ if __name__ == "__main__":
         print("The username and/or password are blank")
         sys.exit()
 
-    main(username, password)
+    if not get_interval and not get_session:
+        print("Neither an Interval or Session data pull was specified. Please supply a INTERVAL=True and/or SESSION=True env var")
+        sys.exit()
+
+    main(username, password, get_interval, get_session)
     print("Done")
     sys.exit()
     
