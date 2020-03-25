@@ -1,8 +1,5 @@
 version: 2.1
 
-orbs:
-    terraform: ovotech/terraform@1.6.5
-
 jobs:
   build:
     docker:
@@ -10,8 +7,6 @@ jobs:
 
     steps:
       - checkout
-      - terraform/plan:
-          path: "./powerflex/"
       - run:
           name: Install build dependencies
           command: pip install pandas boto3 botocore requests s3fs
@@ -28,10 +23,7 @@ jobs:
     steps:
       - checkout
       - run: |
-          cd powerflex
-          terraform init
-          terraform plan
-          terraform apply
+          echo "yay"
 
 workflows:
   version: 2.1
