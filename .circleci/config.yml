@@ -1,4 +1,6 @@
-version: 2
+version: 2.1
+orbs:
+    terraform: devops-workflow/terraform@0.0.1
 jobs:
   build:
     docker:
@@ -27,7 +29,7 @@ jobs:
           terraform plan
 
 workflows:
-  version: 2
+  version: 2.1
   build-deploy:
     jobs:
       - build
