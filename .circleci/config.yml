@@ -8,6 +8,11 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Python version
+          command: |
+            python --version
+            python3 --version
+      - run:
           name: Install build dependencies
           command: pip install pandas boto3 botocore requests s3fs
       - run: 
