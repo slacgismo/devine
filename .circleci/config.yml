@@ -12,8 +12,8 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Check TF version
-          command: terraform --version
+          name: Check python
+          command: python --version
       - run:
           name: Install build dependencies
           command: pip install pandas boto3 botocore requests s3fs
