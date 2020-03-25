@@ -27,6 +27,7 @@ jobs:
           cd powerflex
           terraform init
           terraform plan
+          terraform apply
 
 workflows:
   version: 2.1
