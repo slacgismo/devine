@@ -4,11 +4,15 @@ import s3fs
 import json
 import time
 import boto3
+import logging
 import requests
 import datetime
 import pandas as pd
 from io import StringIO
 from botocore.exceptions import ClientError
+from logging.handlers import RotatingFileHandler
+
+logger = logging.getLogger('DEVINE_LOGS')
 
 DEBUG = False
 
@@ -37,6 +41,20 @@ URLS = {
         "ARCHIVE_02": "https://archive.powerflex.com/get_csh/0032/02"
     }
 }
+
+def init_logging():
+    """
+    Simple logging abstraction. We currently use Rotating File Handler.
+    We may, however, in the future, plug in something like Papertrail
+    """
+    logger.setLevel(logging.DEBUG)
+    # set a common log format
+    logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+    # setup our rotating file handler and assign our common formatter to it
+    rotating_file_handler = RotatingFileHandler('my_log.log', maxBytes=200000, backupCount=10)
+    rotating_file_handler.setFormatter(logFormatter)
+    logger.addHandler(rotating_file_handler)
+
 
 def get_request_base_headers():
     """
@@ -122,7 +140,7 @@ def get_data(url, headers, payload):
     if r.status_code == requests.codes.ok:
         return r.json()
 
-    print(f"Could not retrieve data from {url}. Status Code: {r.status_code}")
+    logger.info(f"Could not retrieve data from {url}. Status Code: {r.status_code}")
     return None
 
 
@@ -194,7 +212,7 @@ def save_csv_to_s3(csv_buffer, filename):
         s3_resource = boto3.resource("s3")
         s3_resource.Object(S3_BUCKET, filename).put(Body=csv_buffer.getvalue())
     except ClientError as e:
-        print(f"Unexpected client error while communicating with S3 via boto: {e}")
+        logger.info(f"Unexpected client error while communicating with S3 via boto: {e}")
 
 
 def main(username, password, get_interval, get_session):
@@ -226,20 +244,22 @@ def main(username, password, get_interval, get_session):
         # lastly, request, process and save the interval and session data
         try:
             if get_interval:
-                print("Retrieving interval data...")
+                logger.info("Retrieving interval data...")
                 process_interval_data(slac_auth_headers, [am_interval, pm_interval])
             
             if get_session:
-                print("Retrieving session data...")
+                logger.info("Retrieving session data...")
                 process_session_data(powerflex_auth_headers, [am_session, pm_session])
         except ValueError as e:
-            print(e)
+            logger.info(e)
     
     except requests.exceptions.ConnectionError as e:
-        print("Looks like we can't access the internet right now...😑")
+        logger.info("Looks like we can't access the internet right now...😑")
 
 
 if __name__ == "__main__":
+    init_logging()
+
     username = os.getenv("USERNAME", None)
     password = os.getenv("PASSWORD", None)
     get_interval = os.getenv("INTERVAL", False)
@@ -247,18 +267,18 @@ if __name__ == "__main__":
     DEBUG = os.getenv("DEBUG", True)
     
     if username is None or password is None:
-        print("The username and/or password were not provided")
+        logger.info("The username and/or password were not provided")
         sys.exit()
 
     if username == "" or password == "":
-        print("The username and/or password are blank")
+        logger.info("The username and/or password are blank")
         sys.exit()
 
     if not get_interval and not get_session:
-        print("Neither an Interval or Session data pull was specified. Please supply a INTERVAL=True and/or SESSION=True env var")
+        logger.info("Neither an Interval or Session data pull was specified. Please supply a INTERVAL=True and/or SESSION=True env var")
         sys.exit()
 
     main(username, password, get_interval, get_session)
-    print("Done")
+    logger.info("Done")
     sys.exit()
     
