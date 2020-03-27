@@ -154,6 +154,9 @@ def process_interval_data(headers, intervals):
         interval_payload = {"measurement": "ct_response",  "time_filter": [entry[0], entry[1]]}
         data = get_data(URLS["SLAC"]["MEASUREMENT"], headers, interval_payload)
         
+        logging.info("Current Interval Payload")
+        logging.info(interval_payload)
+
         if data is None:
             raise ValueError(f"Could not retrieve interval data; request failed")
 
@@ -180,6 +183,9 @@ def process_session_data(headers, intervals):
     for entry in intervals:
         # establish the payload to send to the powerflex api
         session_payload = {"startTime": entry[0], "stopTime": entry[1], "filterBy": "sessionStopTime", "anonymize": True}
+        
+        logging.info("Current Session Payload")
+        logging.info(session_payload)
         
         # request the data
         session_data_1 = get_data(URLS["POWERFLEX"]["ARCHIVE_01"], headers, session_payload)
