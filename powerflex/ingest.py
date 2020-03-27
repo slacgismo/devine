@@ -55,6 +55,11 @@ def init_logging():
     rotating_file_handler.setFormatter(logFormatter)
     logger.addHandler(rotating_file_handler)
 
+    # print to stdout if we are debugging
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setFormatter(logFormatter)
+    logger.addHandler(stream_handler)
+
 
 def get_request_base_headers():
     """
@@ -114,7 +119,9 @@ def generate_filename_and_path(prefix, data_type, dt, suffix, discrete_token="")
     """
     Return a standard naming convention and S3 path to save files to.
     """
-    debug_path = "debug/" if DEBUG else "" 
+    debug_path = "" 
+    if DEBUG == True:
+        debug_path = "debug/" 
     m, d, y = get_formatted_date_components(dt)
     return f"{debug_path}{prefix}/{data_type}/{y}-{m}-{d}{discrete_token}.{suffix}"
 
@@ -154,8 +161,8 @@ def process_interval_data(headers, intervals):
         interval_payload = {"measurement": "ct_response",  "time_filter": [entry[0], entry[1]]}
         data = get_data(URLS["SLAC"]["MEASUREMENT"], headers, interval_payload)
         
-        logging.info("Current Interval Payload")
-        logging.info(interval_payload)
+        logger.info("Current Interval Payload")
+        logger.info(interval_payload)
 
         if data is None:
             raise ValueError(f"Could not retrieve interval data; request failed")
@@ -184,8 +191,8 @@ def process_session_data(headers, intervals):
         # establish the payload to send to the powerflex api
         session_payload = {"startTime": entry[0], "stopTime": entry[1], "filterBy": "sessionStopTime", "anonymize": True}
         
-        logging.info("Current Session Payload")
-        logging.info(session_payload)
+        logger.info("Current Session Payload")
+        logger.info(session_payload)
         
         # request the data
         session_data_1 = get_data(URLS["POWERFLEX"]["ARCHIVE_01"], headers, session_payload)
@@ -215,13 +222,17 @@ def save_csv_to_s3(csv_buffer, filename):
     Write a given csv buffer to S3
     """
     try:
+        logger.info(filename)
         s3_resource = boto3.resource("s3")
         s3_resource.Object(S3_BUCKET, filename).put(Body=csv_buffer.getvalue())
     except ClientError as e:
         logger.info(f"Unexpected client error while communicating with S3 via boto: {e}")
 
 
-def main(username, password, get_interval, get_session):
+def main(username, password, get_interval, get_session, debug_mode):
+    global DEBUG
+    DEBUG = debug_mode
+
     try:
         # Login to SLAC and Powerflex and get the respective tokens
         slac_token = perform_login(URLS["SLAC"]["LOGIN"], username, password)
@@ -266,12 +277,22 @@ def main(username, password, get_interval, get_session):
 if __name__ == "__main__":
     init_logging()
 
-    username = os.getenv("USERNAME", None)
-    password = os.getenv("PASSWORD", None)
-    get_interval = os.getenv("INTERVAL", False)
-    get_session = os.getenv("SESSION", False)
-    DEBUG = os.getenv("DEBUG", True)
-    
+    try:
+        use_args = sys.argv[1] == "use_args"
+        if use_args:
+            username = sys.argv[2]
+            password = sys.argv[3]
+            get_interval = sys.argv[4]
+            get_session = sys.argv[5]
+            DEBUG_MODE = sys.argv[6]
+    except IndexError:
+        # defaults to using the env
+        username = os.getenv("USERNAME", None)
+        password = os.getenv("PASSWORD", None)
+        get_interval = os.getenv("INTERVAL", False)
+        get_session = os.getenv("SESSION", False)
+        DEBUG_MODE = os.getenv("DEBUG", True)
+
     if username is None or password is None:
         logger.info("The username and/or password were not provided")
         sys.exit()
@@ -284,7 +305,7 @@ if __name__ == "__main__":
         logger.info("Neither an Interval or Session data pull was specified. Please supply a INTERVAL=True and/or SESSION=True env var")
         sys.exit()
 
-    main(username, password, get_interval, get_session)
+    main(username, password, get_interval, get_session, DEBUG_MODE)
     logger.info("Done")
     sys.exit()
     
