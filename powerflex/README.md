@@ -29,7 +29,13 @@ Use username and password for powerflex login as arugments
 export USERNAME="" # set the username
 export PASSWORD="" # set the password
 export DEBUG="" # set the debug flag
+export INTERVAL=True|False # set the interval flag
+export SESSION=True|False # set the session flag
 python ingest.py 
+
+# you could, conversely, pass in these as command line arguments to the script
+# python ingest.py use_args [unam] [pswwd] [interval] [session] [debug]
+python ingest.py use_args hi@hi.com 1234 True True False
 ```
 
 ## Build & Run Docker container
