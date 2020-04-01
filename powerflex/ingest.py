@@ -293,6 +293,9 @@ if __name__ == "__main__":
         get_session = os.getenv("SESSION", False)
         DEBUG_MODE = os.getenv("DEBUG", True)
 
+    logger.info(os.getenv("AWS_ACCESS_KEY_ID", "NO ACCESS KEY FOUND!!!"))
+    logger.info(os.getenv("AWS_SECRET_ACCESS_KEY", "NO ACCESS KEY FOUND!!!"))
+
     if username is None or password is None:
         logger.info("The username and/or password were not provided")
         sys.exit()
