@@ -1,5 +1,5 @@
 # devine
-### PI: Gustavo Cezar.
+### PI: Gustavo V Cezar.
 
 DEVINE is a SLAC project studying + demonstrating the impact of electric vehicle integration in non-residential environments.
 
