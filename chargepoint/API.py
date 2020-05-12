@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[71]:
+# In[28]:
 
 
 from zeep import Client
 from zeep.helpers import serialize_object
 from zeep.wsse.username import UsernameToken
+from zeep import xsd
 from datetime import datetime, timedelta
 import pandas as pd
 import json
@@ -20,14 +21,26 @@ class CP_API:
         self.wsdl_url = "https://webservices.chargepoint.com/cp_api_5.0.wsdl"
         self.client = Client(self.wsdl_url, wsse=UsernameToken(self.username, self.password))
 
-    def getSession(self, tStart, tEnd):
+#     def getSession(self, tStart, tEnd):
+
+#         usageSearchQuery = {'fromTimeStamp': tStart, 'toTimeStamp': tEnd,}
+#         data = serialize_object(self.client.service.getChargingSessionData(usageSearchQuery)['ChargingSessionData'])
+#         df = pd.DataFrame(data)
+#         return df
+
+    def getChargingSessionData(self, tStart, tEnd):
 
         usageSearchQuery = {'fromTimeStamp': tStart, 'toTimeStamp': tEnd,}
-        data = self.client.service.getChargingSessionData(usageSearchQuery)
-#         print('session data: ', data['ChargingSessionData'])
-        df = pd.DataFrame(data['ChargingSessionData'])
+        data = serialize_object(self.client.service.getChargingSessionData(usageSearchQuery)['ChargingSessionData'])
+        df = pd.DataFrame(data)
+        return df
+    
+    def get15minChargingSessionData(self, sessionID, energyConsumedInterval=False):
+        value = xsd.AnyObject(xsd.Long, sessionID)
+        usageSearchQuery = {'sessionID': value, 'energyConsumedInterval': energyConsumedInterval}
+        data = self.client.service.get15minChargingSessionData(usageSearchQuery)
         return data
-
+    
     def shedLoad(self, stationID, allowedLoadStation, portNumber, allowedLoadPort, timeInterval=0):
         # load is in kW
         usageSearchQuery = {'stationID': stationID}
@@ -36,8 +49,8 @@ class CP_API:
     def clearShedState(self, ):
         pass
     
-    def getLoad(self):
-        usageSearchQuery = {'stationID': '1:113189'}
+    def getLoad(self, stationID):
+        usageSearchQuery = {'stationID': stationID}
         data = self.client.service.getLoad(usageSearchQuery)
         return data
     
@@ -54,70 +67,38 @@ class CP_API:
 cp = CP_API()
 tStart = datetime(2020, 2, 13, 00, 00, 00)
 tEnd = tStart + timedelta(hours=23, minutes=59, seconds=59)
-data = cp.getSession(tStart, tEnd)
-CPNI = cp.getLoad()
+data = cp.getChargingSessionData(tStart, tEnd)
+# data15 = cp.get15minChargingSessionData(sessionID='658538251') # Throwing error -> need to fix/ask CP
+# CPNI = cp.getLoad()
+# 1:112413, 1:113177, 
 
 
-# In[72]:
+# In[14]:
 
 
+data
+
+
+# In[6]:
+
+
+CPNI = []
+stationID = ['1:113189', '1:112413', '1:113177']
+for i in stationID:
+    CPNI.append(cp.getLoad(i))
 CPNI
-
-
-# In[54]:
-
-
-# print('Data: ', data)
-NewDict = {}  # Initialize a new dictionary
-for listItem in data['ChargingSessionData']:
-    for key, value in listItem.items():  # Loop through all dictionary elements in the list
-        if key in list(NewDict):  # if the key already exists, append to new
-            for entry in value:
-                NewDict[key].append(entry)
-        else:  # if it's a new key, simply add to the new dictionary
-            NewDict[key] = value
-
-df = pd.DataFrame(NewDict)
-df.head()
-
-
-# In[55]:
-
-
-a = data['ChargingSessionData'][0]
-a['stationID']
-
-
-# In[47]:
-
-
-test = serialize_object(data['ChargingSessionData'])
-
-# data['ChargingSessionData']
-
-
-# In[62]:
-
-
-data['ChargingSessionData'][0]
-
-
-# In[49]:
-
-
-df = pd.DataFrame(test)
-
-
-# In[58]:
-
-
-df.head(30)
 
 
 # In[57]:
 
 
 data
+
+
+# In[3]:
+
+
+get_ipython().system('jupyter nbconvert --to script API.ipynb')
 
 
 # In[ ]:
