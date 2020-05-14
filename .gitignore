@@ -137,3 +137,6 @@ dmypy.json
 gridlabd.*
 *.csv
 *.json
+
+# Configuration
+/chargepoint/config.py

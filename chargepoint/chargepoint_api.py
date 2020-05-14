@@ -3,16 +3,17 @@ from zeep.helpers import serialize_object
 from zeep.wsse.username import UsernameToken
 from datetime import datetime, timedelta
 import pandas as pd
+import config
 
 class CP_API:
     def __init__(self):
-        self.username = '92d0023b4f07baa1857381a51de78772546674ef2b8391416000751'
-        self.password = 'c2f058fc77298198f5bb3089cb354053'
+        self.username = config.chargepoint_api_keys['api_username']
+        self.password = config.chargepoint_api_keys['api_password']
         self.wsdl_url = "https://webservices.chargepoint.com/cp_api_5.0.wsdl"
         self.client = Client(self.wsdl_url, wsse=UsernameToken(self.username, self.password))
 
 
-    def getChargingSessionData(self, tStart, tEnd, stationID='null'):
+    def get_charging_session_data(self, tStart, tEnd, stationID='null'):
         if stationID == 'null': # get all stations under API key account
             usageSearchQuery = {'fromTimeStamp': tStart, 'toTimeStamp': tEnd}
         else:
@@ -22,7 +23,7 @@ class CP_API:
         df = pd.DataFrame(data)
         return df
 
-    def getLoad(self, stationID):
+    def get_load(self, stationID):
         # This function gets the current load (kW) being consumed at the stationID
         usageSearchQuery = {'stationID': stationID}
         data = self.client.service.getLoad(usageSearchQuery)
@@ -33,12 +34,12 @@ cp = CP_API()
 # SESSION
 tStart = datetime(2020, 2, 13, 00, 00, 00)
 tEnd = tStart + timedelta(hours=23, minutes=59, seconds=59)
-session = cp.getChargingSessionData(tStart, tEnd, stationID = '1:113189')
+session = cp.get_charging_session_data(tStart, tEnd, stationID = '1:113189')
 print(session['sessionID'])
 
 # LOAD
-Load = []
+load = []
 stationID = ['1:113189', '1:112413', '1:113177']
 for i in stationID:
-    Load.append(cp.getLoad(i))
-print(Load[0])
+    load.append(cp.get_load(i))
+print(load[0])
