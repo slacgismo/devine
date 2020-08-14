@@ -37,7 +37,7 @@ class CP_API:
         data_load = self.client.service.getLoad(usageSearchQuery)
         total_load = data_load['sgLoad']
         station_data = serialize_object(data_load['stationData'])
-        return [total_load, station_data]
+        return [total_load, station_data, data_load]
 
     def getStations(self, organizationName='SLAC - Stanford'):
         # Get list of stations and number of ports under an organization ID
@@ -67,11 +67,11 @@ class CP_API:
 cp = CP_API()
 tStart = datetime(2020, 2, 13, 00, 00, 00)
 tEnd = tStart + timedelta(hours=23, minutes=59, seconds=59)
-session = cp.getSession(tStart, tEnd)
-# load = cp.getStationLoad()
+# session = cp.getSession(tStart, tEnd)
+load = cp.getStationLoad()
 # stations = cp.getStations()
 # stationStatus = cp.getStationStatus(status=1)
 # sessionList = session['sessionID']
 # interval = cp.getIntervalData(sessionList[0])
-users = cp.getUsers()
+# users = cp.getUsers()
 
