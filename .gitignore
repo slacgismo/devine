@@ -140,3 +140,5 @@ gridlabd.*
 
 # Configuration
 /chargepoint/config.py
+
+/smartcharging/script/
