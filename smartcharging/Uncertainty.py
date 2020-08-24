@@ -85,6 +85,7 @@ certain = pd.DataFrame(
     columns=names)
 certain.tz_localize(None).plot()
 plt.ylabel("Departure");
+plt.show()
 
 uncertain = pd.DataFrame(
     np.stack([uncertain_schedule(index, d) for d in departures], axis=1),
@@ -92,6 +93,7 @@ uncertain = pd.DataFrame(
     columns=names)
 uncertain.tz_localize(None).plot()
 plt.ylabel("Departure");
+plt.show()
 
 utility = 100
 
@@ -162,6 +164,7 @@ power = np.stack([v.terminals[0].power_var.value[:, 0] for v in vehicles], axis=
 names = [v.name for v in vehicles]
 power = pd.DataFrame(power, index=index, columns=names)
 np.maximum(power, 0.).plot.area()
+plt.show()
 
 avg_price = np.sum((power.sum(axis=1) * energy_rate(index))) / np.sum(power.sum(axis=1))
 
