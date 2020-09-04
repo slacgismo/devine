@@ -142,3 +142,6 @@ gridlabd.*
 /chargepoint/config.py
 
 /smartcharging/script/
+
+# Data
+/chargepoint/data/ignore_files

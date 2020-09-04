@@ -2,14 +2,15 @@ from zeep import Client
 from zeep.helpers import serialize_object
 from zeep.wsse.username import UsernameToken
 from datetime import datetime, timedelta
+import config
 import pandas as pd
 import json
 
 
 class CP_API:
     def __init__(self):
-        self.username = '92d0023b4f07baa1857381a51de78772546674ef2b8391416000751'
-        self.password = 'c2f058fc77298198f5bb3089cb354053'
+        self.username = config.chargepoint_api_keys['slac_api_username']
+        self.password = config.chargepoint_api_keys['slac_api_password']
         self.wsdl_url = "https://webservices.chargepoint.com/cp_api_5.0.wsdl"
         self.client = Client(self.wsdl_url, wsse=UsernameToken(self.username, self.password))
 
@@ -67,8 +68,8 @@ class CP_API:
 cp = CP_API()
 tStart = datetime(2020, 2, 13, 00, 00, 00)
 tEnd = tStart + timedelta(hours=23, minutes=59, seconds=59)
-# session = cp.getSession(tStart, tEnd)
-load = cp.getStationLoad()
+session = cp.getSession(tStart, tEnd)
+# load = cp.getStationLoad()
 # stations = cp.getStations()
 # stationStatus = cp.getStationStatus(status=1)
 # sessionList = session['sessionID']
