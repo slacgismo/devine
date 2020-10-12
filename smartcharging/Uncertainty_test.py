@@ -142,7 +142,7 @@ index = pd.date_range(start, start + pd.DateOffset(hours=24), freq="15min")[:-1]
 
 vehicles = [
     EV(
-        name="Alice",
+        name="Alice", # UserID from CP
         departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 17:00")),
         charge_max=charge_max(
             index, pd.Timestamp("2020-03-09 08:00"), pd.Timestamp("2020-03-09 17:00"), limit_kw=6.6)[None].transpose(),
