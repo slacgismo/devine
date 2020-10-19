@@ -145,3 +145,9 @@ gridlabd.*
 
 # Data
 /chargepoint/data/ignore_files
+
+# Plots
+/chargepoint/DataAnalysis
+
+# Testing Files
+/chargepoint/test-temp.py
