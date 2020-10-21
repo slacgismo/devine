@@ -2,10 +2,11 @@
 terraform.tfstate
 terraform.tfstate.backup
 
-# Byte-compiled / optimized / DLL files
+# Byte-compiled / optimized / DLL files / Django migrations
 __pycache__/
 *.py[cod]
 *$py.class
+migrations
 
 # C extensions
 *.so
