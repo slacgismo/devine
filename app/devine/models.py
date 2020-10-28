@@ -2,7 +2,7 @@ from django.db import models
 
 # Create your models here.
 
-class user(models.Model):
+class db_user(models.Model):
     user_id = models.CharField(max_length=256,primary_key=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     # user_power = models.DecimalField(max_digits=10, decimal_places=2)#assumption TODO
@@ -12,7 +12,7 @@ class user(models.Model):
     def __str__(self):
         return self.user_id + ':' + self.recent_station_id + ' '+self.recent_port_number
 
-class station(models.Model):
+class db_station(models.Model):
     station_id = models.CharField(max_length=256)
     station_load = models.DecimalField(max_digits=10, decimal_places=2)
     port_number = models.CharField(max_length=10)
@@ -21,7 +21,7 @@ class station(models.Model):
     port_load = models.DecimalField(max_digits=10, decimal_places=2)
     allowed_load = models.DecimalField(max_digits=10, decimal_places=2)
     port_power = models.DecimalField(max_digits=10, decimal_places=2,blank=True,default="")
-    recent_user = models.ForeignKey(user, on_delete=models.DO_NOTHING)
+    recent_user = models.ForeignKey(db_user, on_delete=models.DO_NOTHING, null=True)
 
     class Meta:
         unique_together=("station_id","port_number")

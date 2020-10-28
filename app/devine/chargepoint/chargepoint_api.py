@@ -8,14 +8,14 @@ import json
 
 
 class CP_API:
-    def __init__(self, site='slac'):
+    def __init__(self, site):
         # self.username = config.chargepoint_api_keys['google_api_username']
         # self.password = config.chargepoint_api_keys['google_api_password']
         # self.username = config.chargepoint_api_keys['slac-gismo_api_username']
         # self.password = config.chargepoint_api_keys['slac-gismo_api_password']
         self.username = config.chargepoint_api_keys['{}_api_username'.format(site)]
         self.password = config.chargepoint_api_keys['{}_api_password'.format(site)]
-        self.wsdl_url = "https://webservices.chargepoint.com/cp_api_5.0.wsdl"
+        self.wsdl_url = "https://webservices.chargepoint.com/cp_api_5.1.wsdl"
         self.client = Client(self.wsdl_url, wsse=UsernameToken(self.username, self.password))
 
     def getSession(self, tStart, tEnd):
@@ -90,9 +90,9 @@ def parsePort(data, port_status,port_power):
     }
     return res
 
-def getData(self):
-    site='slac'
-    api_group='slac_B53_sgID'
+def getData(name):
+    site = name[0]
+    api_group = name[1]
     cp = CP_API(site)
     tStart = datetime(2020, 2, 13, 00, 00, 00)
     tEnd = tStart + timedelta(hours=23, minutes=59, seconds=59)
@@ -107,20 +107,20 @@ def getData(self):
     stations = cp.getStations(sgID=config.chargepoint_station_groups[api_group])
     station_list = stations['stationID'].to_list()
     status = cp.getStationStatus(stationIDs=station_list)
-
+    
+    print(len(status))
     stations_inuse = {}
     for i in status:
         num_ports = len(i['Port'])
-        ports_inuse = []
+        ports_each = []
         for p in i['Port']:
-            print('-'*100)
-            print(p['Status'])
-            if p['Status'] != 'INUSE':
-                print(p['Power'])
-                ports_inuse.append([p['portNumber'],p['Status'], p['Power']])
-        if len(ports_inuse) > 0:
-            stations_inuse[i['stationID']] = ports_inuse
-
+            # print('-'*100)
+            # print(p['Status'])
+            # if p['Status'] != 'INUSE':
+            ports_each.append([p['portNumber'],p['Status'], p['Power']])
+        if len(ports_each) > 0:
+            stations_inuse[i['stationID']] = ports_each
+    ii=0
     retval = []
     for i in stations_inuse:
         _,_,station_load,ret = cp.getStationLoad(queryID=i)
@@ -134,10 +134,22 @@ def getData(self):
             load.append(parsePort(station_data['Port'][port_num-1], port_status, port_power))
             # parsePort(station_data['Port'][port_num-1], port_status)
         retval.append({'station_id':i, 'station_load':station_load, 'Port':load})
-    print(retval)
+        ii+=1
+        print(name[1]+str(ii))
+    # print(retval)
     return retval
 
-
+def read_from_sites():
+    sites=[['slac-gismo', 'slac_GISMO_sgID'],
+           ['slac', 'slac_B53_sgID'],
+           ['google', 'google_plymouth_sgID'],
+           ['google', 'google_B46_sgID'],
+           ['google', 'google_CRIT_sgID']]
+    retval = []
+    for site in sites:
+        retval.append(getData(site))
+        print('finish #')
+    return retval
 
 
 # def parser_cp(data):
