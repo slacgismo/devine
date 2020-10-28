@@ -12,6 +12,8 @@ def db_update_from_chargepoint():
     retvals = cp.read_from_sites()
     print('+'*100)
     for retval in retvals:
+        print(retval[0]['Port'])
+        print(len(retval[0]['Port']))
         for i in range(len(retval['Port'])): 
             # update properties for station
             station = db_station()

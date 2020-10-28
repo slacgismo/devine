@@ -14,14 +14,15 @@ class db_user(models.Model):
 
 class db_station(models.Model):
     station_id = models.CharField(max_length=256)
-    station_load = models.DecimalField(max_digits=10, decimal_places=2)
+    station_load = models.DecimalField(max_digits=10, decimal_places=3)
     port_number = models.CharField(max_length=10)
     port_status = models.CharField(max_length=64)
     shed_state = models.BooleanField()
-    port_load = models.DecimalField(max_digits=10, decimal_places=2)
-    allowed_load = models.DecimalField(max_digits=10, decimal_places=2)
-    port_power = models.DecimalField(max_digits=10, decimal_places=2,blank=True,default="")
+    port_load = models.DecimalField(max_digits=10, decimal_places=3)
+    allowed_load = models.DecimalField(max_digits=10, decimal_places=3)
+    port_power = models.DecimalField(max_digits=10, decimal_places=3,blank=True,default="")
     recent_user = models.ForeignKey(db_user, on_delete=models.DO_NOTHING, null=True)
+    port_timestamp = models.DateTimeField(null=True)
 
     class Meta:
         unique_together=("station_id","port_number")
