@@ -12,7 +12,7 @@ def home(request):
 
 def db_update_from_chargepoint():
     retvals_all_groups = cp.read_from_sites()
-    print('+'*100)
+    print('*'*100)
     start = time.time()
     for retvals_one_group in retvals_all_groups:
         for retval_one_station in retvals_one_group:

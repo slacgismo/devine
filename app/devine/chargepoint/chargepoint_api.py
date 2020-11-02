@@ -107,10 +107,9 @@ def getData(name):
     stations = cp.getStations(sgID=config.chargepoint_station_groups[api_group])
     station_list = stations['stationID'].to_list()
     cp_station = {'stationID': station_list}
-    print(len(station_list))
     status = cp.getStationStatus(stationIDs=cp_station)
-    print('Time1: ', time.time()-start) #FIXME
-    print(len(status))
+    # print(len(station_list))
+    # print('Time1: ', time.time()-start)
     stations_inuse = {}
     stations_notuse = {}
     for i in status:
@@ -131,14 +130,11 @@ def getData(name):
     ii=0
     retval = []
     station_load_map = {} #save the station_load to avoid getLoad again when ports not use
-    print('Time2: ', time.time()-start) #FIXME
     for i in stations_inuse:
-        print('Time3: ', time.time()-start) #FIXME
         station_load,ret = cp.getStationLoad(queryID=i)
         station_data = ret['stationData'][0]
         station_load_map[i] = station_load
         load = []
-        print('Time4: ', time.time()-start) #FIXME
         for p in range(len(stations_inuse[i])): #how many ports
             port_num = int(stations_inuse[i][p][0]) #the port#
             port_status = stations_inuse[i][p][1]
