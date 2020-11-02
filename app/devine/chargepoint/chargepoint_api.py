@@ -40,10 +40,10 @@ class CP_API:
         # station group.This method also returns the load for each port on a multi-port station.
         usageSearchQuery = {'stationID': queryID}
         data_load = self.client.service.getLoad(usageSearchQuery)
-        total_load = data_load['sgLoad']
-        station_data = serialize_object(data_load['stationData'])
+        # total_load = data_load['sgLoad']
+        # station_data = serialize_object(data_load['stationData'])
         station_load = data_load['stationData'][0]['stationLoad']
-        return [total_load, station_data,station_load, data_load]
+        return [station_load, data_load]
 
     def getStations(self, organizationName='SLAC - Stanford', sgID=None):
         # Get list of stations and number of ports under an organization ID
@@ -134,7 +134,7 @@ def getData(name):
     print('Time2: ', time.time()-start) #FIXME
     for i in stations_inuse:
         print('Time3: ', time.time()-start) #FIXME
-        _,_,station_load,ret = cp.getStationLoad(queryID=i)
+        station_load,ret = cp.getStationLoad(queryID=i)
         station_data = ret['stationData'][0]
         station_load_map[i] = station_load
         load = []
@@ -169,10 +169,11 @@ def getData(name):
             load_notuse.append(parsePort(data_notuse, port_num_notuse, port_status_notuse, port_power_notuse, port_timestamp_notuse))
         retval.append({'station_id':j, 'station_load':station_load_notuse, 'Port':load_notuse})
         
-    print(retval)
+    # print(retval)
     return retval
 
 def read_from_sites():
+    start = time.time()
     sites=[['slac-gismo', 'slac_GISMO_sgID'],
            ['slac', 'slac_B53_sgID'],
            ['google', 'google_CRIT_sgID'],
@@ -183,6 +184,7 @@ def read_from_sites():
         retval.append(getData(site))
         print('finish #')
     # print(retval)
+    print('Total Time: ', time.time()-start)
     return retval
 
 

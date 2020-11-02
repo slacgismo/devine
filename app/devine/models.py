@@ -3,9 +3,9 @@ from django.db import models
 # Create your models here.
 
 class db_user(models.Model):
-    user_id = models.CharField(max_length=256,primary_key=True)
+    id = models.AutoField(primary_key=True)
+    user_id = models.CharField(max_length=256)
     timestamp = models.DateTimeField(auto_now_add=True)
-    # user_power = models.DecimalField(max_digits=10, decimal_places=2)#assumption TODO
     recent_station_id = models.CharField(max_length=256, blank=True)
     recent_port_number = models.CharField(max_length=10, blank=True)
 
