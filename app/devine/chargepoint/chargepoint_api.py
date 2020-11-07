@@ -6,34 +6,17 @@ from . import config
 import pandas as pd
 import json
 import time
+from django.utils import timezone
+import pytz
 
 class CP_API:
     def __init__(self, site):
-        # self.username = config.chargepoint_api_keys['google_api_username']
-        # self.password = config.chargepoint_api_keys['google_api_password']
-        # self.username = config.chargepoint_api_keys['slac-gismo_api_username']
-        # self.password = config.chargepoint_api_keys['slac-gismo_api_password']
+        self.site = site
+        self.timestamp = timezone.now()
         self.username = config.chargepoint_api_keys['{}_api_username'.format(site)]
         self.password = config.chargepoint_api_keys['{}_api_password'.format(site)]
         self.wsdl_url = "https://webservices.chargepoint.com/cp_api_5.1.wsdl"
         self.client = Client(self.wsdl_url, wsse=UsernameToken(self.username, self.password))
-
-    def getSession(self, tStart, tEnd):
-        # This call retrieves final session summaries for a station owner’s (organization’s) charging station(s)based
-        # on search criteria
-        usageSearchQuery = {'fromTimeStamp': tStart, 'toTimeStamp': tEnd, }
-        data_session = self.client.service.getChargingSessionData(usageSearchQuery)
-        df = pd.DataFrame(serialize_object(data_session['ChargingSessionData']))
-        return df
-
-    def getIntervalData(self, sessionID):
-        # This call retrieves final session summaries for a station owner’s (organization’s) charging station(s)based
-        # on search criteria
-        usageSearchQuery = {'sessionID': sessionID}
-        data_session = self.client.service.get15minChargingSessionData(
-            usageSearchQuery)  # Getting encoding violation error
-        # df = pd.DataFrame(serialize_object(data_session['ChargingSessionData']))
-        return data_session
 
     def getStationLoad(self,queryID='1:5447121'):
         # Use this call to retrieve the load and shed state for a single station or custom
@@ -53,13 +36,6 @@ class CP_API:
         df = pd.DataFrame(serialize_object(data['stationData']))
         return df[['stationID', 'numPorts']]
 
-    def getUsers(self):
-        # Get list of stations and number of ports under an organization ID
-        usageSearchQuery = {}
-        data = self.client.service.getUsers(usageSearchQuery)
-        df = pd.DataFrame(serialize_object(data['users']['user']))
-        return df['userID']
-
     def getStationStatus(self, status=None, stationIDs=None):
         # Get list of available stations
         usageSearchQuery = {'Status': status, 'stationIDs': stationIDs, 'portDetails':True}
@@ -68,13 +44,49 @@ class CP_API:
         df = serialize_object(data['stationData'])
         return df
 
-    def getStationGroups(self, orgID):
-        usageSearchQuery = {'orgID': orgID}
-        data = self.client.service.getStationStatus(usageSearchQuery)
-        df = serialize_object(data['stationData'])
+    def getChargingSessionData(self, stationID=None, activeSessionsOnly=False, tStart=None, tEnd=None):
+        usageSearchQuery = {'stationID': stationID ,'activeSessionsOnly': activeSessionsOnly, 'fromTimeStamp': tStart, 'toTimeStamp': tEnd}
+        data = self.client.service.getChargingSessionData(usageSearchQuery)
+        df = serialize_object(data['ChargingSessionData'])
         return df
-    # def getUpdates(self,):
-    #     # get updates you are listening
+    
+    # Devine-> 5min/ opti session table: session ID, group name, session start, timestamp, user ID, energy
+    # parameter: stationIDs, the stations in this group, can obtain from getStationsbyGroup()
+    def getChargingActiveSessionData(self, group, stationIDs=None):
+        res = []
+        for stationID in stationIDs:
+            sessions = self.getChargingSessionData(stationID, True)
+            if not sessions:
+                continue
+            for element in sessions:
+                session = {}
+                session['sessionID'] = element['sessionID']
+                session['groupName'] = group
+                session['startTime'] = element['startTime']
+                session['userID'] = element['userID']
+                session['energy'] = element['Energy']
+                session['timestamp'] = self.timestamp
+                res.append(session)
+        return res
+    
+    #Devine-> 1day/ UI session table: session ID, group name, session start, end, timestamp, user ID, energy
+    # parameter: stationIDs, the stations in this group, can obtain from getStationsbyGroup()
+    def getChargingDailySessionData(self, group, stationIDs=None, tStart=None, tEnd=None):
+        res = []
+        for stationID in stationIDs:
+            sessions = self.getChargingSessionData(stationID, False, tStart, tEnd)
+            if not sessions:
+                continue
+            for element in sessions:
+                session = {}
+                session['sessionID'] = element['sessionID']
+                session['groupName'] = group
+                session['startTime'] = element['startTime']
+                session['endTime'] = element['endTime']
+                session['userID'] = element['userID']
+                session['energy'] = element['Energy']
+                res.append(session)
+        return res
 
 def parsePort(data, port_num, port_status,port_power, port_timestamp):
     res={
@@ -85,33 +97,32 @@ def parsePort(data, port_num, port_status,port_power, port_timestamp):
         'allowed_load':data['allowedLoad'],
         'port_power':port_power,
         'user_id':data['userID'],
-        'port_timestamp':port_timestamp
+        'port_timestamp':port_timestamp,
+        'session_id':data['sessionID'],
     }
     return res
 
-def getData(name):
+
+def getData(name, ret_session):
     start = time.time()
     site = name[0]
     api_group = name[1]
     cp = CP_API(site)
     tStart = datetime(2020, 2, 13, 00, 00, 00)
     tEnd = tStart + timedelta(hours=23, minutes=59, seconds=59)
-    # session = cp.getSession(tStart, tEnd)
-    # load = cp.getStationLoad()
-    # stations = cp.getStations(organizationName='SLAC Research Group')
-    # stationStatus = cp.getStationStatus(status=1)
-    # sessionList = session['sessionID']
-    # interval = cp.getIntervalData(sessionList[0])
-    # users = cp.getUsers()
-    # stations = cp.getStations(sgID=config.chargepoint_station_groups['slac_B53_sgID'])
+
     stations = cp.getStations(sgID=config.chargepoint_station_groups[api_group])
     station_list = stations['stationID'].to_list()
+
+
+# Get Station Status
     cp_station = {'stationID': station_list}
     status = cp.getStationStatus(stationIDs=cp_station)
     # print(len(station_list))
     # print('Time1: ', time.time()-start)
     stations_inuse = {}
     stations_notuse = {}
+    inuse_station_list =[]
     for i in status:
         num_ports = len(i['Port'])
         ports_inuse = []
@@ -125,8 +136,19 @@ def getData(name):
                 ports_notuse.append([p['portNumber'],p['Status'], p['Power'], p['TimeStamp']])
         if len(ports_inuse) > 0:
             stations_inuse[i['stationID']] = ports_inuse
+            inuse_station_list.append(i['stationID'])
         if len(ports_notuse) > 0:
             stations_notuse[i['stationID']] = ports_notuse
+    
+# Get session EVERY 5min
+    print('+'*100)
+    print(inuse_station_list)
+    activeSessionList = cp.getChargingActiveSessionData(name[2], inuse_station_list)
+    for session in activeSessionList:
+        ret_session.append(session)
+    print('\n Active Session Finished Loading \n')
+
+# Get INUSE Load
     ii=0
     retval = []
     station_load_map = {} #save the station_load to avoid getLoad again when ports not use
@@ -146,6 +168,7 @@ def getData(name):
         ii+=1
         print(name[1]+str(ii))
 
+ # Get NOTUSE Load
     for j in stations_notuse:
         station_load_notuse = 0.000
         if j in station_load_map:
@@ -161,28 +184,53 @@ def getData(name):
                 'portLoad':0.000,
                 'allowedLoad':0.000,
                 'userID': '',
+                'sessionID':'',
             }
             load_notuse.append(parsePort(data_notuse, port_num_notuse, port_status_notuse, port_power_notuse, port_timestamp_notuse))
-        retval.append({'station_id':j, 'station_load':station_load_notuse, 'Port':load_notuse})
+        retval.append({'station_id':j,'group_name': name[2], 'station_load':station_load_notuse, 'Port':load_notuse})
         
-    # print(retval)
     return retval
 
-def read_from_sites():
+def readAllGroups():
     start = time.time()
-    sites=[['slac-gismo', 'slac_GISMO_sgID'],
-           ['slac', 'slac_B53_sgID'],
-           ['google', 'google_CRIT_sgID'],
-           ['google', 'google_B46_sgID'],
-           ['google', 'google_plymouth_sgID']]
-    retval = []
+    sites=[['slac-gismo', 'slac_GISMO_sgID', 'slac_GISMO'],
+           ['slac', 'slac_B53_sgID', 'slac_B53'],
+           ['google', 'google_CRIT_sgID', 'google_CRIT'],
+           ['google', 'google_B46_sgID', 'google_B46'],
+           ['google', 'google_plymouth_sgID', 'google_plymouth']]
+    ret_general = []
+    ret_session = []
     for site in sites:
-        retval.append(getData(site))
-        print('finish #')
+        ret_general.append(getData(site, ret_session))
+        print('finish #' + site[2])
     # print(retval)
     print('Total Time: ', time.time()-start)
-    return retval
+    return ret_general, ret_session
 
+def readDailySessions():# Given a tStart
+    start = time.time()
+    sites=[['slac-gismo', 'slac_GISMO_sgID', 'slac_GISMO'],
+           ['slac', 'slac_B53_sgID', 'slac_B53'],
+           ['google', 'google_CRIT_sgID', 'google_CRIT'],
+           ['google', 'google_B46_sgID', 'google_B46'],
+           ['google', 'google_plymouth_sgID', 'google_plymouth']]
+    daily_sessions = []
+    for site in sites:
+        start = time.time()
+        cp = CP_API(site[0])
+        tStart = datetime(2020, 2, 13, 00, 00, 00)
+        tEnd = tStart + timedelta(hours=23, minutes=59, seconds=59)
+
+        stations = cp.getStations(sgID=config.chargepoint_station_groups[site[1]])
+        station_list = stations['stationID'].to_list()
+
+        # Get session EVERY DAY
+        daily_sessions = cp.getChargingDailySessionData(site[2], station_list, tStart, tEnd)
+        for session in daily_sessions:
+            print(session)
+        
+    print('Total Time: ', time.time()-start)
+    return daily_sessions
 
 #########################################################################################
 #                           Hidden Problem:                                             #
