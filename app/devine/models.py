@@ -16,17 +16,17 @@ class db_user(models.Model):
 
 class db_station(models.Model):
     station_id = models.CharField(max_length=128)
-    group_name = models.CharField(max_length=256)#FIXME:
+    group_name = models.CharField(max_length=256)
     station_load = models.DecimalField(max_digits=10, decimal_places=3)
     port_number = models.CharField(max_length=10)
     port_status = models.CharField(max_length=64)
     shed_state = models.BooleanField()
-    port_load = models.DecimalField(max_digits=10, decimal_places=3)#FIXME:
+    port_load = models.DecimalField(max_digits=10, decimal_places=3)
     allowed_load = models.DecimalField(max_digits=10, decimal_places=3)
     port_power = models.DecimalField(max_digits=10, decimal_places=3)
     recent_user = models.ForeignKey(db_user, on_delete=models.DO_NOTHING, null=True)
     port_timestamp = models.DateTimeField()
-    exception_flag = models.BooleanField(default=False) #0:success 1:exception #FIXME:
+    exception_flag = models.BooleanField(default=False) #0:success 1:exception 
 
     class Meta:
         unique_together=("station_id","port_number")
@@ -34,7 +34,7 @@ class db_station(models.Model):
         return self.station_id + ' #' + self.port_number + ':' + self.user_id
 
 
-class db_config(models.Model):# group configs #FIXME:
+class db_config(models.Model):# group configs 
     group_name = models.CharField(max_length=256)
     max_power = models.DecimalField(max_digits=10, decimal_places=3)
     day_perc = models.DecimalField(max_digits=10, decimal_places=5, default=0.000)
@@ -67,7 +67,7 @@ class db_ui_session(models.Model):# for UI, every day
     user_id = models.CharField(max_length=128, null=True)
 
     def __str__(self):
-        return self.session_id + ',' + self.group_name + ':' + self.start_time + ' to ' + self.end_time
+        return self.session_id + ',' + self.group_name
 
 
 class db_opt_session(models.Model):# for optimization, every 5 min 
@@ -80,5 +80,5 @@ class db_opt_session(models.Model):# for optimization, every 5 min
     user_id = models.CharField(max_length=128, null=True)
 
     def __str__(self):
-        return self.session_id + ',' + self.group_name + ':' + self.start_time
+        return self.session_id + ',' + self.group_name
 

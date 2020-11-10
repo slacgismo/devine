@@ -14,7 +14,7 @@ def home(request):
 
 
 def db_update_by_cp():
-    except_flag, retval_all_groups, retval_act_sessions = cp.readAllGroups()
+    except_flag, retval_all_groups, retval_act_sessions = cp.read_all_groups()
     if except_flag == False:
         resp_code = retval_all_groups
         resp_text = retval_act_sessions
@@ -107,7 +107,7 @@ def db_update_daily_session_by_cp(request):
         print("checked duplicate")
         return render(request, 'home.html')
 
-    retvals = cp.readDailySessions(zeroYesterday)
+    retvals = cp.read_daily_sessions(zeroYesterday)
     for retval in retvals:
         session = db_ui_session()
         session.session_id = retval['sessionID']
