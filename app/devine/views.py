@@ -3,15 +3,28 @@ from django.http import HttpResponse, HttpResponseRedirect
 from .chargepoint import chargepoint_api as cp
 from .models import *
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
+from pytz import timezone
 
 def home(request):
-    db_update_from_chargepoint()
-    
+    db_update_by_cp()
+    # db_ingest_config()
+
     return render(request, 'home.html')
 
-def db_update_from_chargepoint():
-    retval_all_groups, retval_act_sessions = cp.readAllGroups()
+def db_update_by_cp():
+    except_flag, retval_all_groups, retval_act_sessions = cp.readAllGroups()
+    if except_flag == False:
+        resp_code = retval_all_groups
+        resp_text = retval_act_sessions
+        alert = db_alert()
+        alert.alert_time = timezone.now()
+        alert.alert_type = 'ChargePoint API'
+        alert.alert_desc = resp_text
+        alert.alert_status = 'Open'
+        alert.save()
+        return
+    
     print('*'*100)
     start = time.time()
     for retval_one_group in retval_all_groups:
@@ -39,11 +52,7 @@ def db_update_from_chargepoint():
                 
                 if retval['port_status']=="INUSE" and retval['user_id'] is not None:
                     # update user
-                    # print('so:'+retval['user_id'])
                     user = db_user()
-                    # if retval['user_id'] is None:
-                    #     user.user_id = 'None'+ str(retval['session_id'])
-                    # else:
                     try:
                         user = db_user.objects.get(user_id = retval['user_id'])
                     except:
@@ -62,6 +71,7 @@ def db_update_from_chargepoint():
 
                 station.save()
     
+    db_opt_session.objects.all().delete()
     for retval in retval_act_sessions:
         session = db_opt_session()
         session.session_id = retval['sessionID']
@@ -72,6 +82,52 @@ def db_update_from_chargepoint():
         session.user_id = retval['userID']
         session.save()
 
-    print('Total Time: ', time.time()-start)
+
+    print('Total View Time: ', time.time()-start)
 
     
+def db_update_daily_session_by_cp(request):
+    now = timezone.now()
+    zeroToday = now - timedelta(hours=now.hour, minutes=now.minute, seconds=now.second,microseconds=now.microsecond)
+    zeroYesterday = zeroToday - timedelta(hours=24, minutes=0, seconds=0)
+    print(zeroYesterday)
+
+    # When dev, you might call this function by accident, so it helps check daily ingestion to avoid duplicate
+    isExist = db_ui_session.objects.filter(timestamp__gte=zeroToday)
+    if len(isExist) > 0:
+        print(len(isExist))
+        print("checked duplicate")
+        return render(request, 'home.html')
+    
+    retvals = cp.readDailySessions(zeroYesterday)
+    for retval in retvals:
+        session = db_ui_session()
+        session.session_id = retval['sessionID']
+        session.group_name = retval['groupName']
+        session.start_time = retval['startTime']
+        session.end_time = retval['endTime']
+        session.timestamp = retval['timestamp']
+        session.energy = retval['energy']
+        session.user_id = retval['userID']
+        session.save()
+
+    return render(request, 'home.html')
+
+
+def db_update_from_ui(request):# TODO: Simply save the four percent params into db 
+    return render(request, 'home.html')
+
+
+def db_ingest_config():
+    sites=[['slac_GISMO', '2575 Sand Hill Road, Menlo Park, CA, 94025',6.600 ],
+        ['slac_B53', '2575 Sand Hill Road, Menlo Park, CA, 94025', 39.600],
+        ['google_CRIT', '1300 Crittenden Ln, Mountain View CA 94043', 376.200],
+        ['google_B46', '1565 Charleston Rd, Mountain View CA 94043', 459.200],
+        ['google_plymouth', '1625 Plymouth Rd, Mountain View CA 94043', 419.600]]
+    
+    for site in sites:
+        obj = db_config()
+        obj.group_name = site[0]
+        obj.address = site[1]
+        obj.max_power = site[2]
+        obj.save()

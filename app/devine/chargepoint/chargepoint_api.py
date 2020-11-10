@@ -26,7 +26,7 @@ class CP_API:
         # total_load = data_load['sgLoad']
         # station_data = serialize_object(data_load['stationData'])
         station_load = data_load['stationData'][0]['stationLoad']
-        return [station_load, data_load]
+        return station_load, data_load,data_load['responseCode'],data_load['responseText']
 
     def getStations(self, organizationName='SLAC - Stanford', sgID=None):
         # Get list of stations and number of ports under an organization ID
@@ -34,7 +34,7 @@ class CP_API:
         data = self.client.service.getStations(usageSearchQuery)
         # print(data) -> uncomment this to get sgID and group name
         df = pd.DataFrame(serialize_object(data['stationData']))
-        return df[['stationID', 'numPorts']]
+        return df[['stationID', 'numPorts']],data['responseCode'],data['responseText']
 
     def getStationStatus(self, status=None, stationIDs=None):
         # Get list of available stations
@@ -42,20 +42,22 @@ class CP_API:
         # usageSearchQuery = {'stations': stationIDs}
         data = self.client.service.getStationStatus(usageSearchQuery)
         df = serialize_object(data['stationData'])
-        return df
+        return df,data['responseCode'],data['responseText']
 
     def getChargingSessionData(self, stationID=None, activeSessionsOnly=False, tStart=None, tEnd=None):
         usageSearchQuery = {'stationID': stationID ,'activeSessionsOnly': activeSessionsOnly, 'fromTimeStamp': tStart, 'toTimeStamp': tEnd}
         data = self.client.service.getChargingSessionData(usageSearchQuery)
         df = serialize_object(data['ChargingSessionData'])
-        return df
+        return df,data['responseCode'],data['responseText']
     
     # Devine-> 5min/ opti session table: session ID, group name, session start, timestamp, user ID, energy
     # parameter: stationIDs, the stations in this group, can obtain from getStationsbyGroup()
     def getChargingActiveSessionData(self, group, stationIDs=None):
-        res = []
+        res = [True]
         for stationID in stationIDs:
-            sessions = self.getChargingSessionData(stationID, True)
+            sessions,resp_code, resp_text = self.getChargingSessionData(stationID, True)
+            if resp_code!='100' and resp_code!='136':
+                return [False,resp_code,resp_text]
             if not sessions:
                 continue
             for element in sessions:
@@ -74,7 +76,9 @@ class CP_API:
     def getChargingDailySessionData(self, group, stationIDs=None, tStart=None, tEnd=None):
         res = []
         for stationID in stationIDs:
-            sessions = self.getChargingSessionData(stationID, False, tStart, tEnd)
+            sessions, resp_code, resp_text = self.getChargingSessionData(stationID, False, tStart, tEnd)
+            if resp_code!='100' and resp_code!='136':
+                return [False,resp_code,resp_text]
             if not sessions:
                 continue
             for element in sessions:
@@ -85,6 +89,7 @@ class CP_API:
                 session['endTime'] = element['endTime']
                 session['userID'] = element['userID']
                 session['energy'] = element['Energy']
+                session['timestamp'] = self.timestamp
                 res.append(session)
         return res
 
@@ -111,15 +116,18 @@ def getData(name, ret_session):
     tStart = datetime(2020, 2, 13, 00, 00, 00)
     tEnd = tStart + timedelta(hours=23, minutes=59, seconds=59)
 
-    stations = cp.getStations(sgID=config.chargepoint_station_groups[api_group])
+    stations, resp_code, resp_text = cp.getStations(sgID=config.chargepoint_station_groups[api_group])
+    if resp_code!='100':
+            return [False,resp_code,resp_text]
     station_list = stations['stationID'].to_list()
 
 
 # Get Station Status
     cp_station = {'stationID': station_list}
-    status = cp.getStationStatus(stationIDs=cp_station)
-    # print(len(station_list))
-    # print('Time1: ', time.time()-start)
+    status, resp_code, resp_text = cp.getStationStatus(stationIDs=cp_station)
+    if resp_code!='100':
+            return [False,resp_code,resp_text]
+    
     stations_inuse = {}
     stations_notuse = {}
     inuse_station_list =[]
@@ -144,16 +152,21 @@ def getData(name, ret_session):
     print('+'*100)
     print(inuse_station_list)
     activeSessionList = cp.getChargingActiveSessionData(name[2], inuse_station_list)
+    if activeSessionList[0] == False:
+        return activeSessionList
+    activeSessionList.pop(0)
     for session in activeSessionList:
         ret_session.append(session)
     print('\n Active Session Finished Loading \n')
 
 # Get INUSE Load
     ii=0
-    retval = []
+    retval = [True]
     station_load_map = {} #save the station_load to avoid getLoad again when ports not use
     for i in stations_inuse:
-        station_load,ret = cp.getStationLoad(queryID=i)
+        station_load,ret,resp_code,resp_text = cp.getStationLoad(queryID=i)
+        if resp_code!='100':
+            return [False,resp_code,resp_text]
         station_data = ret['stationData'][0]
         station_load_map[i] = station_load
         load = []
@@ -164,7 +177,7 @@ def getData(name, ret_session):
             port_timestamp = stations_inuse[i][p][3]
             load.append(parsePort(station_data['Port'][port_num-1], port_num, port_status, port_power, port_timestamp))
             # parsePort(station_data['Port'][port_num-1], port_status)
-        retval.append({'station_id':i, 'station_load':station_load, 'Port':load})
+        retval.append({'station_id':i,'group_name': name[2], 'station_load':station_load, 'Port':load})
         ii+=1
         print(name[1]+str(ii))
 
@@ -201,13 +214,17 @@ def readAllGroups():
     ret_general = []
     ret_session = []
     for site in sites:
-        ret_general.append(getData(site, ret_session))
+        ret = getData(site, ret_session)
+        if ret[0]==False:
+            return ret
+        ret.pop(0)
+        ret_general.append(ret)
         print('finish #' + site[2])
     # print(retval)
     print('Total Time: ', time.time()-start)
-    return ret_general, ret_session
+    return True, ret_general, ret_session
 
-def readDailySessions():# Given a tStart
+def readDailySessions(tStart):# Should be Given a tStart
     start = time.time()
     sites=[['slac-gismo', 'slac_GISMO_sgID', 'slac_GISMO'],
            ['slac', 'slac_B53_sgID', 'slac_B53'],
@@ -215,22 +232,23 @@ def readDailySessions():# Given a tStart
            ['google', 'google_B46_sgID', 'google_B46'],
            ['google', 'google_plymouth_sgID', 'google_plymouth']]
     daily_sessions = []
+    ret = []
     for site in sites:
         start = time.time()
         cp = CP_API(site[0])
-        tStart = datetime(2020, 2, 13, 00, 00, 00)
+        # tStart = datetime(2020, 2, 13, 00, 00, 00)
         tEnd = tStart + timedelta(hours=23, minutes=59, seconds=59)
 
-        stations = cp.getStations(sgID=config.chargepoint_station_groups[site[1]])
+        stations, resp_code, resp_text = cp.getStations(sgID=config.chargepoint_station_groups[site[1]])
         station_list = stations['stationID'].to_list()
 
         # Get session EVERY DAY
         daily_sessions = cp.getChargingDailySessionData(site[2], station_list, tStart, tEnd)
         for session in daily_sessions:
-            print(session)
+            ret.append(session)
         
-    print('Total Time: ', time.time()-start)
-    return daily_sessions
+    print('Total Chargepoint Time: ', time.time()-start)
+    return ret
 
 #########################################################################################
 #                           Hidden Problem:                                             #

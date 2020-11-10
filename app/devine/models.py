@@ -37,17 +37,17 @@ class db_station(models.Model):
 class db_config(models.Model):# group configs #FIXME:
     group_name = models.CharField(max_length=256)
     max_power = models.DecimalField(max_digits=10, decimal_places=3)
-    day_perc = models.DecimalField(max_digits=10, decimal_places=5)
-    night_perc = models.DecimalField(max_digits=10, decimal_places=5)
-    yellow_perc = models.DecimalField(max_digits=10, decimal_places=5)
-    red_perc = models.DecimalField(max_digits=10, decimal_places=5)
+    day_perc = models.DecimalField(max_digits=10, decimal_places=5, default=0.000)
+    night_perc = models.DecimalField(max_digits=10, decimal_places=5, default=0.000)
+    yellow_perc = models.DecimalField(max_digits=10, decimal_places=5, default=1.000)
+    red_perc = models.DecimalField(max_digits=10, decimal_places=5, default=1.000)
     address = models.CharField(max_length=512)
 
     def __str__(self):
         return self.group_name + ' : ' + self.max_power + 'kw'
 
 
-class db_alert(models.Model):#source1: chargepoint API, source2: Django detection #FIXME:
+class db_alert(models.Model):#source1: chargepoint API, source2: Django detection 
     alert_time = models.DateTimeField()
     alert_type = models.CharField(max_length=64)
     alert_desc = models.CharField(max_length=256)
@@ -57,27 +57,27 @@ class db_alert(models.Model):#source1: chargepoint API, source2: Django detectio
         return self.alert_time + ':' + self.alert_type
 
 
-class db_ui_session(models.Model):# for UI, every day #FIXME:
+class db_ui_session(models.Model):# for UI, every day 
     session_id = models.CharField(max_length=256)
     group_name = models.CharField(max_length=256)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     timestamp = models.DateTimeField()
     energy = models.DecimalField(max_digits=10, decimal_places=3)
-    user_id = models.CharField(max_length=128)
+    user_id = models.CharField(max_length=128, null=True)
 
     def __str__(self):
         return self.session_id + ',' + self.group_name + ':' + self.start_time + ' to ' + self.end_time
 
 
-class db_opt_session(models.Model):# for optimization, every 5 min #FIXME:
+class db_opt_session(models.Model):# for optimization, every 5 min 
     #the same with db_ui_session, except for lack of end_time
     session_id = models.CharField(max_length=256)
     group_name = models.CharField(max_length=256)
     start_time = models.DateTimeField()
     timestamp = models.DateTimeField()
     energy = models.DecimalField(max_digits=10, decimal_places=3)
-    user_id = models.CharField(max_length=128)
+    user_id = models.CharField(max_length=128, null=True)
 
     def __str__(self):
         return self.session_id + ',' + self.group_name + ':' + self.start_time
