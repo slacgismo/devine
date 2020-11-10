@@ -1,7 +1,7 @@
 "use strict"
 
 function update_5_min() {
-    console.log('1')
+    console.log('update_5_min')
     let request = new XMLHttpRequest()
 
     request.onreadystatechange = function() {
@@ -13,7 +13,7 @@ function update_5_min() {
 }
 
 function update_1_day() {
-    console.log('2')
+    console.log('update_1_day')
     let request = new XMLHttpRequest()
 
     request.onreadystatechange = function() {
