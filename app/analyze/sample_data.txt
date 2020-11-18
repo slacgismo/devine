@@ -1,0 +1,14 @@
+EVSE ID,    59563
+User Id,    2394461
+Org Name,   Google
+Start Time, 1/1/19 15:42
+End Time,   1/1/19 17:47
+Total Duration (hh:mm:ss),2:05:28
+Charging Time (hh:mm:ss),2:05:15
+Energy (kWh),7.615392
+start_datetime,2019-01-01 15:42:00
+start_seconds,56520 # seconds since the 00:00 of the day
+start_year,2019
+start_month,1
+start_day,1
+start_weekday, 1
