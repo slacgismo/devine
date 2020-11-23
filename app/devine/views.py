@@ -1,15 +1,15 @@
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from .chargepoint import chargepoint_api as cp
+from .optimization import energy_opt
 from .models import *
 import time
 from datetime import datetime, timedelta
 from pytz import timezone
 
-
 def home(request):
     db_update_by_cp()
-
+    db_update_from_opt()
     return render(request, 'home.html')
 
 
@@ -141,3 +141,70 @@ def db_ingest_config():  # ingest constant information for 5 groups
         obj.address = site[1]
         obj.max_power = site[2]
         obj.save()
+
+def db_update_from_opt():
+    groups = ['slac_GISMO', 'slac_B53', 'google_CRIT', 'google_B46', 'google_plymouth']
+    
+    # Store the max_power configuration for each group
+    group_conifg = {}
+    # Get the max power configuration for each group
+    all_config = db_config.objects.all()
+    hour_now = datetime.now().hour
+    for config in all_config:
+        # Use the day percent from 6 am to 7 pm; 
+        # use 100% when user hasn't input any percent for the transformer
+        perc = 1.0
+        if hour_now >= 6 and hour_now < 19:
+            if config.day_perc:
+                perc = float(config.day_perc)
+        else:
+            if config.night_perc:
+                perc = float(config.night_perc)
+        if config.max_power:
+            group_conifg[config.group_name] = float(config.max_power) * perc
+    
+    # Store the information for sessions with userID=None
+    none_user_power = {}
+    for group in groups:
+        none_user_power[group] = []
+
+    # Store the count for sessions with energy field for further debug
+    fail_get_energy_cnt=0
+    # Store the charging information to do optimization for each vehicle
+    opt_input = {}
+    for group in groups:
+        opt_input[group] = []
+
+    # Get the charging information from the INUSE ports
+    inuse_stations = db_station.objects.filter(port_status='INUSE')
+    for inuse_station in inuse_stations:
+        # Deal with userID=None
+        if inuse_station.recent_user is None:
+            tmp_input = {
+                'station_id':inuse_station.station_id,
+                'port_number':inuse_station.port_number,
+                'port_power':inuse_station.port_power,
+            }
+            none_user_power[inuse_station.group_name].append(tmp_input)
+        else:
+            tmp_input = {
+                    'station_id':inuse_station.station_id,
+                    'port_number':inuse_station.port_number,
+                    'user_id':inuse_station.recent_user.user_id,
+                    'port_power':inuse_station.port_power,
+                    'energy': 0.0,
+                }
+            try:
+                session = db_opt_session.objects.get(user_id = inuse_station.recent_user.user_id)
+                tmp_input['energy'] = session.energy
+            except:
+                # Use the default energy=0.0 when no information for energy
+                fail_get_energy_cnt+=1
+            opt_input[inuse_station.group_name].append(tmp_input)
+    
+    print(group_conifg)
+    print(opt_input)
+    print(none_user_power)
+    print(fail_get_energy_cnt)
+    ret_val = energy_opt(group_conifg, opt_input, none_user_power,fail_get_energy_cnt)
+    print(ret_val)
