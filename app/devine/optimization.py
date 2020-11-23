@@ -96,7 +96,7 @@ def get_vehicles(index, group_info):
     for session in group_info:
         vehicles.append( EV(
             name=session['user_id'],
-            # TODO: Get from machine learning or set default distribution
+            # TODO: Get from machine learning (wait Zhongyan) or set default distribution
             departure_prob=departure_prob(index, pd.Timestamp("2020-11-16 17:00")),
             # From first entry in the db when a user charging session starts = port_power
             charge_max=session['port_power'],
@@ -145,18 +145,18 @@ def energy_opt(group_config, opt_input, none_user_power, fail_get_energy_cnt):
         try:
             results = network.optimize(time_horizon=len(index), verbose=True, solver="ECOS")
         except Exception as e: 
-            # TODO: log the failure
+            # TODO: wait for log format from @Zixiong log the failure
             print(e)
             continue
-        # TODO: log the failure
+        # TODO: wait for log format from @Zixiong log the failure
         if results.status != 'optimal':
             continue
         power = [v.terminals[0].power_var.value[0][0] for v in vehicles]
         
         for i in range(len(vehicles)):
             # Send power to the station shed to opt_input and none_user_power
-            #ret = cp.setStationLoad(stationIDs[i], ports[i], power[i])
-            # TODO: If success or not log the failure
+            # ret = cp.setStationLoad(stationIDs[i], ports[i], power[i])
+            # TODO: wait for log format from @Zixiong If success or not log the failure
             # write into database (userId, success or fail, power, timestamp, stationid and port)
             tmp_output = {
                 'user_id': group_info[i]['user_id'],

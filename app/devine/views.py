@@ -202,9 +202,6 @@ def db_update_from_opt():
                 fail_get_energy_cnt+=1
             opt_input[inuse_station.group_name].append(tmp_input)
     
-    print(group_conifg)
-    print(opt_input)
-    print(none_user_power)
-    print(fail_get_energy_cnt)
     ret_val = energy_opt(group_conifg, opt_input, none_user_power,fail_get_energy_cnt)
-    print(ret_val)
+    
+    # TODO: @Zixiong Store the return value into the database
