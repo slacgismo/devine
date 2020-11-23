@@ -9,6 +9,11 @@ import cvxpy as cvx
 import pandas as pd
 import numpy as np
 from scipy.stats import norm
+import sys
+import os
+sys.path.append(os.path.dirname(__file__) + '../app/analyze')
+
+from analyze import *
 
 class Grid(Generator):
     def __init__(self, energy_rate=None, demand_rate=None, **kwargs):
@@ -108,13 +113,37 @@ plt.ylabel("Departure Uncertain");
 
 utility = 100
 
-
-def departure_prob(index, expected_departure, sigma=4):
+'''
+index: date range, separate by 15 mins interval
+expected_departure: expected timestamp when the car will leave
+Requirement of *kwargs: {'site_name': name, 'user_id':id}
+Example {'site_name' : 'user_id':id}
+'''
+# Zhongyan Huang
+predicter = ANALYZE()
+predicter.setup('../app/analyze/historical_data/')
+Group_dict = {
+    'slac_GISMO' : 'SLAC', 
+    'slac_B53' : 'SLAC', 
+    'google_plymouth' : 'Google-Plymouth', 
+    'google_B46' : 'Google-B46', 
+    'google_CRIT' : 'Google-CRIT'
+}
+def departure_prob(index, expected_departure, sigma=4, site_name = None, user_id = None):
     i = np.nonzero(index > expected_departure)[0][0]
-    prob = norm.pdf(np.arange(len(index)), loc=i, scale=sigma)
-    prob = prob / np.sum(prob)
-    return prob
-
+    if site_name and user_id is not None:
+        density = np.zero(len(index))
+        if user_id in predicter.driver_model.user_id_set:
+            distribution = predicter.driver_model.avg_stats_dict[user_id]['Departure']
+            density = distribution / np.sum(distribution)
+        else:
+            distribution = predicter.site_models[Group_dict[site_name]].avg_stats_dict['Departure']
+            density = distribution / np.sum(distribution)
+        return density
+    else:  
+        prob = norm.pdf(np.arange(len(index)), loc=i, scale=sigma)
+        prob = prob / np.sum(prob)
+        return prob
 
 class EV(Storage):
     @property
@@ -143,7 +172,7 @@ index = pd.date_range(start, start + pd.DateOffset(hours=24), freq="15min")[:-1]
 vehicles = [
     EV(
         name="Alice", # UserID from CP
-        departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 17:00")),
+        departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 17:00"), site_name = 'google_B46'),
         charge_max=charge_max(
             index, pd.Timestamp("2020-03-09 08:00"), pd.Timestamp("2020-03-09 17:00"), limit_kw=6.6)[None].transpose(),
         # charge_max=6.6,
@@ -152,7 +181,7 @@ vehicles = [
     ),
     EV(
         name="Bob",
-        departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 17:45")),
+        departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 17:45"), site_name = 'google_B46'),
         charge_max=charge_max(
             index, pd.Timestamp("2020-03-09 09:00"), pd.Timestamp("2020-03-09 17:45"), limit_kw=6.6)[None].transpose(),
         # charge_max=6.6,
@@ -161,7 +190,7 @@ vehicles = [
     ),
     EV(
         name="Carol",
-        departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 11:00")),
+        departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 11:00"), site_name = 'google_B46'),
         charge_max=charge_max(
             index, pd.Timestamp("2020-03-09 08:00"), pd.Timestamp("2020-03-09 11:00"), limit_kw=3.3)[None].transpose(),
         # charge_max=3.3,

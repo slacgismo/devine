@@ -24,19 +24,39 @@ class SITE:
         for key in self.avg_stats_dict.keys():
             self.gmm[key] = None
         
-    def gmm_fit(self, df, stats_dict): 
+    def gmm_fit(self, df, stats_dict, show_graph): 
         num_bins = 96
+        fig, ax = plt.subplots(4, figsize = (10,20))
+        ax_idx = 0
         for key in self.avg_stats_dict.keys():
-            data_points = df[stats_dict[key]]
-            dp_filter = [x for x in data_points if x < 100]
-            n, bins, patches = plt.hist(dp_filter, bins = num_bins, density=True)
-            (mu, sigma) = norm.fit(dp_filter)
+            # data_points = df[stats_dict[key]]
+            data_points = self.avg_stats_dict[key]
+            # num_points = np.sum(data_points)
+            raw_data = []
+            for idx, val in enumerate(data_points):
+                for i in range(int(val)):
+                    raw_data.append(idx)
+            # dp_sum = np.sum(raw_data)
+            # dp_mu = np.mean(raw_data)
+            # dp_std = np.std(raw_data)
+            # dp_filter = [x for x in data_points if x < 100]
+            n, bins, patches = ax[ax_idx].hist(raw_data, bins = num_bins, density=True)
+            ax[ax_idx].set_title(key)
+            (mu, sigma) = norm.fit(raw_data)
             y = norm.pdf(bins, mu, sigma)
-            plt.plot(bins, y, 'r--', linewidth=2)
-            plt.show()
+            # store bins, mu,sigma
+            ax[ax_idx].plot(bins, y, 'r--', linewidth=2)
+            self.gmm[key] = (bins, mu, sigma)
+            ax_idx += 1
+        if show_graph:
+                # plt.plot(bins, y, 'r--', linewidth=2)
+                path = 'SITE/'
+                if not os.path.exists(path):
+                    os.makedirs(path)
+                plt.savefig(path + self.name + '-' + 'GMM' +  '.png', bbox_inches='tight')
 
     def update(self, stats_key, df_column):
-        (unique, counts) = np.unique(df_column / 4, return_counts=True)
+        (unique, counts) = np.unique(df_column, return_counts=True)
         freq = np.zeros(96,)
 
         # Get freq counts over the day
@@ -51,7 +71,7 @@ class SITE:
     def update_statistics(self, stats_key, dataframe):
         self.update(stats_key, dataframe)
     
-    def read_data_from_file(self, file_path):
+    def read_data_from_file(self, file_path, show_graph = False):
         stats_dict = {
             'Charging Duration': 'Charging Time 15min', 
             'Arrival': 'Start Time 15min', 
@@ -77,12 +97,12 @@ class SITE:
             self.update_statistics(key, data2[stats_dict[key]])
         
         # update gmm model
-        self.gmm_fit(data2, stats_dict)
+        self.gmm_fit(data2, stats_dict, show_graph)
 
     def to_graph(self, save_fig = False):
-        dict_plot_label = {'xlabel': 'Hour', 'ylabel': 'Frequency', 'title': 'Distribution of site users'}
+        dict_plot_label = {'xlabel': 'Hour', 'ylabel': 'Frequency', 'title': self.name}
         start_inds = np.arange(0, 96) * 0.25
-        intervals = np.arange(0, 96, 0.01) * 0.25
+        # intervals = np.arange(0, 96, 0.01) * 0.25
 
         fig, ax = plt.subplots(4, figsize = (10,20))
         # fig.set_title(dict_plot_label['title'])
@@ -94,10 +114,11 @@ class SITE:
             ax[ax_idx].set_xlabel(dict_plot_label['xlabel'])
             ax[ax_idx].set_ylabel(dict_plot_label['ylabel'])
             ax[ax_idx].set_title(key)
+            ax_idx += 1
         if save_fig:
             path = 'SITE/'
             if not os.path.exists(path):
                 os.makedirs(path)
             plt.savefig(path + dict_plot_label['title'] + '.png', bbox_inches='tight')
         else:
-            plt.show()
+            plt.show()\

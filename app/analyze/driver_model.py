@@ -19,9 +19,10 @@ class DRIVER:
     def __init__(self, stats_dict = {}):
         self.ref_stats_dict = stats_dict
         self.avg_stats_dict = {}
+        self.user_id_set = {}
 
     def update(self, user_id, stats_key, df_column):
-        (unique, counts) = np.unique(df_column / 4, return_counts=True)
+        (unique, counts) = np.unique(df_column, return_counts=True)
         freq = np.zeros(96,)
 
         # Get freq counts over the day
@@ -56,7 +57,7 @@ class DRIVER:
         # Statistics - overall data:
         total_sessions = len(data2)
         print('Total # of sessions: ', total_sessions)
-        user_data = {} # key: user id, val: user count
+        user_data = {} # key: user id, val: num of sessions of this user
         for idx in data2.index:
             user_id = data2.iloc[idx]['User Id']
             if  user_id not in user_data:
@@ -68,14 +69,17 @@ class DRIVER:
                     data2.iloc[idx]['Start Time 15min'],
                 ]
             )
-        # filter out those drivers with too less sessions
+        # filter out those drivers with too less sessions (< 10)
         remove_keys = []
         for user in user_data:
             if len(user_data[user]) < 10:
                 remove_keys.append(user)
         for remove_key in remove_keys:
             user_data.pop(remove_key, None)
-            
+        
+        # store user_data to user set
+        self.user_id_set = user_data
+
         # update internal statistics
         for user in user_data:
             item_array = user_data[user]
