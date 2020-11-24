@@ -83,14 +83,14 @@ Group_dict = {
     'google_CRIT' : 'Google-CRIT'
 }
 def departure_prob(index, site_name=None, user_id=None):
-    density = np.zero(len(index))
+    density = np.zeros(len(index))
     if site_name and user_id is not None:    
-        if user_id in predicter.driver_model.user_id_set:
-            distribution = predicter.driver_model.avg_stats_dict[user_id]['Departure']
-            density = distribution / np.sum(distribution)
-        else:
-            distribution = predicter.site_models[Group_dict[site_name]].avg_stats_dict['Departure']
-            density = distribution / np.sum(distribution)
+        # if user_id in predicter.driver_model.user_id_set:
+        #     distribution = predicter.driver_model.avg_stats_dict[user_id]['Departure']
+        #     density = distribution / np.sum(distribution)
+        # else:
+        distribution = predicter.site_models[Group_dict[site_name]].avg_stats_dict['Departure']
+        density = distribution / np.sum(distribution)
     return density
 
 class EV(Storage):

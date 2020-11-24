@@ -121,4 +121,4 @@ class SITE:
                 os.makedirs(path)
             plt.savefig(path + dict_plot_label['title'] + '.png', bbox_inches='tight')
         else:
-            plt.show()\
+            plt.show()
