@@ -16,11 +16,11 @@ Groups = ['slac_GISMO', 'slac_B53', 'google_plymouth', 'google_B46', 'google_CRI
 Group_data = {
     'SLAC' : [
         # 'app/analyze/historical_data/SLAC-Session-Details-Meter-with-Summary-2018.csv',
-        'SLAC-Session-Details-Meter-with-Summary-2019.csv'
+        # 'SLAC-Session-Details-Meter-with-Summary-2019.csv'
     ],
     'Google-Plymouth': [
         # 'app/analyze/historical_data/Plymouth 2019 Session-Details-Meter-with-Summary.csv',
-        'Plymouth 2020 Session-Details-Meter-with-Summary.csv'
+        # 'Plymouth 2020 Session-Details-Meter-with-Summary.csv'
     ],
     'Google-B46':[
         # 'app/analyze/historical_data/MTV-46-2020 Session-Details-Meter-with-Summary.csv',
@@ -30,7 +30,7 @@ Group_data = {
     'Google-CRIT' :[
         # 'app/analyze/historical_data/MTV-CRIT-2018-Session-Details-Meter-with-Summary',
         # 'app/analyze/historical_data/MTV-CRIT-2019-Session-Details-Meter-with-Summary',
-        'MTV-CRIT-2020-Session-Details-Meter-with-Summary',
+        # 'MTV-CRIT-2020-Session-Details-Meter-with-Summary',
     ]
 }
 
