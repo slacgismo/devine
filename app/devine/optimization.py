@@ -8,6 +8,7 @@ import cvxpy as cvx
 import pandas as pd
 import numpy as np
 from scipy.stats import norm
+from .analyze.analyze import *
 
 utility = 100
 power_max_default = 100
@@ -65,11 +66,32 @@ def demand_rate(index):
     retval = {'max_demand': 21.10, 'max_part_peak_demand': 6.1, 'max_peak_demand': 21.94, 'max_demand_ind': max_demand_ind, 'max_part_peak_demand_ind':max_part_peak_demand_ind, 'max_peak_demand_ind': max_peak_demand_ind}
     return retval
 
-def departure_prob(index, expected_departure, sigma=4):
-    i = np.nonzero(index > expected_departure)[0][0]
-    prob = norm.pdf(np.arange(len(index)), loc=i, scale=sigma)
-    prob = prob / np.sum(prob)
-    return prob
+'''
+index: date range, separate by 15 mins interval
+expected_departure: expected timestamp when the car will leave
+Requirement of *kwargs: {'site_name': name, 'user_id':id}
+Example {'site_name' : 'user_id':id}
+'''
+# Departure probability from the historical data analysis
+predicter = ANALYZE()
+predicter.setup('./analyze/historical_data/')
+Group_dict = {
+    'slac_GISMO' : 'SLAC', 
+    'slac_B53' : 'SLAC', 
+    'google_plymouth' : 'Google-Plymouth', 
+    'google_B46' : 'Google-B46', 
+    'google_CRIT' : 'Google-CRIT'
+}
+def departure_prob(index, site_name=None, user_id=None):
+    density = np.zero(len(index))
+    if site_name and user_id is not None:    
+        if user_id in predicter.driver_model.user_id_set:
+            distribution = predicter.driver_model.avg_stats_dict[user_id]['Departure']
+            density = distribution / np.sum(distribution)
+        else:
+            distribution = predicter.site_models[Group_dict[site_name]].avg_stats_dict['Departure']
+            density = distribution / np.sum(distribution)
+    return density
 
 class EV(Storage):
     @property
@@ -91,13 +113,13 @@ class EV(Storage):
             **kwargs
         )
 
-def get_vehicles(index, group_info):
+def get_vehicles(index, group_info, group):
     vehicles = []
     for session in group_info:
         vehicles.append( EV(
             name=session['user_id'],
-            # TODO: Get from machine learning (wait Zhongyan) or set default distribution
-            departure_prob=departure_prob(index, pd.Timestamp("2020-11-16 17:00")),
+            # Get from machine learning or set default distribution
+            departure_prob=departure_prob(index, group, session['user_id']),
             # From first entry in the db when a user charging session starts = port_power
             charge_max=session['port_power'],
             # Change energy init according to current session energy
@@ -133,7 +155,7 @@ def energy_opt(group_config, opt_input, none_user_power, fail_get_energy_cnt):
         transformer = Transformer(power_max=power_max-none_power_total)
         
         # Get real-time EV list
-        vehicles = get_vehicles(index, group_info)
+        vehicles = get_vehicles(index, group_info, group)
         
         # Construct the network
         net_v = Net([v.terminals[0] for v in vehicles] + [transformer.terminals[0]], name="EVSE")
