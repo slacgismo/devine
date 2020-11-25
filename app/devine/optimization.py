@@ -8,7 +8,8 @@ import cvxpy as cvx
 import pandas as pd
 import numpy as np
 from scipy.stats import norm
-from .analyze.analyze import *
+from analyze import *
+from analyze.analyze import *
 
 utility = 100
 power_max_default = 100
