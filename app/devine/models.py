@@ -53,6 +53,7 @@ class db_alert(models.Model):#source1: chargepoint API, source2: Django detectio
     alert_type = models.CharField(max_length=64)
     alert_desc = models.CharField(max_length=256)
     alert_status = models.CharField(max_length=32)
+    group_name = models.CharField(max_length=256, default='slac_GISMO')
 
     def __str__(self):
         return self.alert_time + ':' + self.alert_type
@@ -89,6 +90,7 @@ class db_notification(models.Model):
     yellow_load = models.BooleanField(default=False)
     red_load = models.BooleanField(default=False)
     telecomm_alert = models.BooleanField(default=False)
-
+    group_name = models.CharField(max_length=256, default='slac_GISMO')
+    
     def __str__(self):
         return self.email
