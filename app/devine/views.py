@@ -18,7 +18,7 @@ def home(request):
     request.method = 'GET'
     request.GET._mutable = True
     request.GET['group_name'] = 'slac_GISMO'
-    get_unique_drivers_by_date().get(request)
+    getAlerts().get(request)
     return render(request, 'home.html')
 
 
@@ -32,13 +32,10 @@ def db_update_by_cp():
         alert.alert_type = 'ChargePoint API'
         alert.alert_desc = resp_text
         alert.alert_status = 'Open'
+        #FIXME: Now the alert save every error message to a default group 'slac_GISMO'. In future, we should design
+        # a proper way to save and show the alerts, no matter split by group or share as public
         alert.save()
 
-
-        # db_opt_session.objects.all().delete()
-        # stations = db_station.objects.all()
-        # for station in stations:
-        #     station
         return
 
     print('*' * 100)
@@ -148,7 +145,7 @@ def db_ingest_config():  # ingest constant information for 5 groups
         obj.max_power = site[2]
         obj.save()
 
-class get_unique_drivers_by_date(APIView): 
+class getUniqueDriversByDate(APIView): 
     def get(self, request):
         nows = timezone.now()
         zero_today = nows - timedelta(
@@ -180,9 +177,29 @@ class get_unique_drivers_by_date(APIView):
             'number_of_unique_drivers':[len(seventh_day), len(sixth_day), len(fifth_day), 
                     len(fourth_day), len(third_day),len(second_day),len(first_day)]
         }
-        print(context)
+        # print(context)
         response_json = json.dumps(context,cls=DjangoJSONEncoder)
         response = HttpResponse(response_json, content_type='application/json')
         return response
 
 
+class getAlerts(APIView): 
+    def get(self, request):
+        alerts = db_alert.objects.filter(group_name=request.GET['group_name'])
+        context={
+            'date':[],
+            'time':[],
+            'type':[],
+            'description':[],
+            'status':[]
+        }
+        for alert in alerts:
+            context['date'].append(str(alert.alert_time.date()))
+            context['time'].append(alert.alert_time.time().strftime('%H:%M:%S'))
+            context['type'].append(alert.alert_type)
+            context['description'].append(alert.alert_desc)
+            context['status'].append(alert.alert_status)
+        # print(context)
+        response_json = json.dumps(context,cls=DjangoJSONEncoder)
+        response = HttpResponse(response_json, content_type='application/json')
+        return response
