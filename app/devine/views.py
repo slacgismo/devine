@@ -18,7 +18,15 @@ def home(request):
     request.method = 'GET'
     request.GET._mutable = True
     request.GET['group_name'] = 'slac_GISMO'
-    getAlerts().get(request)
+    getNotifications().get(request)
+
+    request.method = 'POST'
+    request.POST._mutable = True
+    request.POST['group_name'] = 'slac_GISMO'
+    request.POST['method'] = 'delete'
+    request.POST['email'] = '3@1.com'
+    request.POST['other_data'] = {'yellow':True, 'red':True, 'telecomm_alert':True}
+    getNotifications().post(request)
     return render(request, 'home.html')
 
 
@@ -145,7 +153,8 @@ def db_ingest_config():  # ingest constant information for 5 groups
         obj.max_power = site[2]
         obj.save()
 
-class getUniqueDriversByDate(APIView): 
+
+class getUniqueDriversByDate(APIView):
     def get(self, request):
         nows = timezone.now()
         zero_today = nows - timedelta(
@@ -174,7 +183,7 @@ class getUniqueDriversByDate(APIView):
                     str(zero_third_day.month)+'/'+str(zero_third_day.day),
                     str(zero_second_day.month)+'/'+str(zero_second_day.day),
                     str(zero_first_day.month)+'/'+str(zero_first_day.day)],
-            'number_of_unique_drivers':[len(seventh_day), len(sixth_day), len(fifth_day), 
+            'number_of_unique_drivers':[len(seventh_day), len(sixth_day), len(fifth_day),
                     len(fourth_day), len(third_day),len(second_day),len(first_day)]
         }
         # print(context)
@@ -183,23 +192,74 @@ class getUniqueDriversByDate(APIView):
         return response
 
 
-class getAlerts(APIView): 
+class getAlerts(APIView):
     def get(self, request):
         alerts = db_alert.objects.filter(group_name=request.GET['group_name'])
-        context={
-            'date':[],
-            'time':[],
-            'type':[],
-            'description':[],
-            'status':[]
-        }
+        context = {'date': [], 'time': [], 'type': [], 'description': [], 'status': []}
         for alert in alerts:
             context['date'].append(str(alert.alert_time.date()))
             context['time'].append(alert.alert_time.time().strftime('%H:%M:%S'))
             context['type'].append(alert.alert_type)
             context['description'].append(alert.alert_desc)
             context['status'].append(alert.alert_status)
-        # print(context)
-        response_json = json.dumps(context,cls=DjangoJSONEncoder)
+        print(context)
+        response_json = json.dumps(context, cls=DjangoJSONEncoder)
         response = HttpResponse(response_json, content_type='application/json')
         return response
+
+
+class getNotifications(APIView):
+    def get(self, request):
+        notifs = db_notification.objects.filter(group_name=request.GET['group_name'])
+        context = {'email': [], 'yellow': [], 'red': [], 'telecomm_alert': []}
+        for notif in notifs:
+            context['email'].append(notif.email)
+            context['yellow'].append(notif.yellow_load)
+            context['red'].append(notif.red_load)
+            context['telecomm_alert'].append(notif.telecomm_alert)
+        # print(context)
+        response_json = json.dumps(context, cls=DjangoJSONEncoder)
+        response = HttpResponse(response_json, content_type='application/json')
+        return response
+
+    def post(self, request):
+        if request.POST['method'] == 'add':
+            self.add_notification(request.POST['group_name'], request.POST['email'],
+                                  request.POST['other_data'])
+        elif request.POST['method'] == 'delete':
+            self.delete_notification(request.POST['group_name'], request.POST['email'])
+        elif request.POST['method'] == 'modify':
+            self.modify_notification(request.POST['group_name'], request.POST['email'],
+                                     request.POST['other_data'])
+
+        notifs = db_notification.objects.filter(group_name=request.POST['group_name'])
+        context = {'email': [], 'yellow': [], 'red': [], 'telecomm_alert': []}
+        for notif in notifs:
+            context['email'].append(notif.email)
+            context['yellow'].append(notif.yellow_load)
+            context['red'].append(notif.red_load)
+            context['telecomm_alert'].append(notif.telecomm_alert)
+        # print(context)
+        response_json = json.dumps(context, cls=DjangoJSONEncoder)
+        response = HttpResponse(response_json, content_type='application/json')
+        return response
+
+    def add_notification(self, group_name, email, data):
+        notif = db_notification()
+        notif.email = email
+        notif.yellow_load = data['yellow']
+        notif.red_load = data['red']
+        notif.telecomm_alert = data['telecomm_alert']
+        notif.group_name = group_name
+        notif.save()
+
+    def delete_notification(self, group_name, email):
+        notif = db_notification.objects.filter(group_name=group_name).filter(email=email)
+        notif.delete()
+
+    def modify_notification(self, group_name, email, data):
+        notif = db_notification.objects.filter(group_name=group_name).get(email=email)
+        notif.yellow_load = data['yellow']
+        notif.red_load = data['red']
+        notif.telecomm_alert = data['telecomm_alert']
+        notif.save()

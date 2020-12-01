@@ -91,6 +91,9 @@ class db_notification(models.Model):
     red_load = models.BooleanField(default=False)
     telecomm_alert = models.BooleanField(default=False)
     group_name = models.CharField(max_length=256, default='slac_GISMO')
-    
+
     def __str__(self):
         return self.email
+    
+    class Meta:
+        unique_together=("email","group_name")
