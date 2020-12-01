@@ -324,12 +324,18 @@ class PowerDispatch extends React.Component {
                   </Row>
                 </CardHeader>
                 <CardBody>
-                <Col className="mb-5 mb-xl-0" xl="8">
-                  <Row className="mt-3"><h3 className="mb-0">Cost minimizztion&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</h3><Switch checked={true}/></Row>
-                  <Row className="mt-3"><h3 className="mb-0">Cost and CO2 minimizztion&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</h3><Switch checked={true}/></Row>
-                  <Row className="mt-3"><h3 className="mb-0">Transformer compacity limit&nbsp;&nbsp;&nbsp;</h3><Switch checked={true}/></Row>
-
-                </Col>
+                 <Row>
+                    <Col><h3 className="mt-3">Cost minimization</h3></Col>
+                    <Col className="mt-3"><Switch checked={true}/></Col>
+                  </Row>
+                  <Row>
+                     <Col><h3 className="mt-3">Cost and CO2 minimization</h3></Col>
+                     <Col className="mt-3"><Switch checked={true}/></Col>
+                  </Row>
+                  <Row>
+                      <Col><h3 className="mt-3">Transformer compacity limit</h3></Col>
+                      <Col className="mt-3"><Switch checked={true}/></Col>
+                  </Row>
                   
                   {/* Chart */}
                   {/* <Chart options={this.state.resourcesOptions} series={this.state.resourcesSeries} type="column" width={500} height={190} /> */}
