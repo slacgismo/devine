@@ -151,3 +151,6 @@ gridlabd.*
 
 # Testing Files
 /chargepoint/test-temp.py
+
+# Node Modules
+/devine_ui/node_modules
