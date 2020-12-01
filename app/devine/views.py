@@ -4,11 +4,21 @@ from .chargepoint import chargepoint_api as cp
 from .models import *
 import time
 from datetime import datetime, timedelta
-from pytz import timezone
+from django.utils import timezone
+import pytz
+from django.core.serializers.json import DjangoJSONEncoder
+import json
+from rest_framework.views import APIView
 
+#TODO: add enough error handlers to each functions
+#TODO: when connecting with frontend, all the request.POST/request.GET should be replaced by request.data/request.query_params.get
 
 def home(request):
-    db_update_by_cp()
+    # db_update_by_cp()
+    request.method = 'GET'
+    request.GET._mutable = True
+    request.GET['group_name'] = 'slac_GISMO'
+    get_unique_drivers_by_date().get(request)
     return render(request, 'home.html')
 
 
@@ -121,9 +131,6 @@ def db_update_daily_session_by_cp(request):
     return render(request, 'home.html')
 
 
-def db_update_from_ui(request):  
-    return render(request, 'home.html')
-
 # manually ingestion
 def db_ingest_config():  # ingest constant information for 5 groups
     sites = [
@@ -140,3 +147,42 @@ def db_ingest_config():  # ingest constant information for 5 groups
         obj.address = site[1]
         obj.max_power = site[2]
         obj.save()
+
+class get_unique_drivers_by_date(APIView): 
+    def get(self, request):
+        nows = timezone.now()
+        zero_today = nows - timedelta(
+            hours=nows.hour, minutes=nows.minute, seconds=nows.second, microseconds=nows.microsecond)
+        zero_seventh_day = zero_today - timedelta(hours=24*7, minutes=0, seconds=0)
+        zero_sixth_day = zero_today - timedelta(hours=24*6, minutes=0, seconds=0)
+        zero_fifth_day = zero_today - timedelta(hours=24*5, minutes=0, seconds=0)
+        zero_fourth_day = zero_today - timedelta(hours=24*4, minutes=0, seconds=0)
+        zero_third_day = zero_today - timedelta(hours=24*3, minutes=0, seconds=0)
+        zero_second_day = zero_today - timedelta(hours=24*2, minutes=0, seconds=0)
+        zero_first_day = zero_today - timedelta(hours=24*1, minutes=0, seconds=0)
+
+        seventh_day = db_user.objects.filter(group_name=request.GET['group_name']).filter(timestamp__gte=zero_seventh_day).filter(timestamp__lte=zero_sixth_day)
+        sixth_day = db_user.objects.filter(group_name=request.GET['group_name']).filter(timestamp__gte=zero_sixth_day).filter(timestamp__lte=zero_fifth_day)
+        fifth_day = db_user.objects.filter(group_name=request.GET['group_name']).filter(timestamp__gte=zero_fifth_day).filter(timestamp__lte=zero_fourth_day)
+        fourth_day = db_user.objects.filter(group_name=request.GET['group_name']).filter(timestamp__gte=zero_fourth_day).filter(timestamp__lte=zero_third_day)
+        third_day = db_user.objects.filter(group_name=request.GET['group_name']).filter(timestamp__gte=zero_third_day).filter(timestamp__lte=zero_second_day)
+        second_day = db_user.objects.filter(group_name=request.GET['group_name']).filter(timestamp__gte=zero_second_day).filter(timestamp__lte=zero_first_day)
+        first_day = db_user.objects.filter(group_name=request.GET['group_name']).filter(timestamp__gte=zero_first_day).filter(timestamp__lte=zero_today)
+
+        context={
+            'date':[str(zero_seventh_day.month)+'/'+str(zero_seventh_day.day),
+                    str(zero_sixth_day.month)+'/'+str(zero_sixth_day.day),
+                    str(zero_fifth_day.month)+'/'+str(zero_fifth_day.day),
+                    str(zero_fourth_day.month)+'/'+str(zero_fourth_day.day),
+                    str(zero_third_day.month)+'/'+str(zero_third_day.day),
+                    str(zero_second_day.month)+'/'+str(zero_second_day.day),
+                    str(zero_first_day.month)+'/'+str(zero_first_day.day)],
+            'number_of_unique_drivers':[len(seventh_day), len(sixth_day), len(fifth_day), 
+                    len(fourth_day), len(third_day),len(second_day),len(first_day)]
+        }
+        print(context)
+        response_json = json.dumps(context,cls=DjangoJSONEncoder)
+        response = HttpResponse(response_json, content_type='application/json')
+        return response
+
+
