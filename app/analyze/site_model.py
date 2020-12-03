@@ -115,10 +115,15 @@ class SITE:
             ax[ax_idx].set_ylabel(dict_plot_label['ylabel'])
             ax[ax_idx].set_title(key)
             ax_idx += 1
+            # plt.bar(start_inds, freq, alpha=1, edgecolor='k', width=0.2)
+            # plt.set_xticks(np.arange(0,24,2))
+            # plt.set_xlabel(dict_plot_label['xlabel'])
+            # plt.set_ylabel(dict_plot_label['ylabel'])
+            # plt.set_title(key)
         if save_fig:
             path = 'SITE/'
             if not os.path.exists(path):
                 os.makedirs(path)
-            plt.savefig(path + dict_plot_label['title'] + '.png', bbox_inches='tight')
+            plt.savefig(path + dict_plot_label['title'] + ' ' + key + '.png', bbox_inches='tight')
         else:
             plt.show()

@@ -9,6 +9,7 @@ class db_user(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     recent_station_id = models.CharField(max_length=256, blank=True)
     recent_port_number = models.CharField(max_length=10, blank=True)
+    group_name = models.CharField(max_length=256, default='slac_GISMO')
 
     def __str__(self):
         return self.user_id + ':' + self.recent_station_id + ' '+self.recent_port_number
@@ -52,6 +53,7 @@ class db_alert(models.Model):#source1: chargepoint API, source2: Django detectio
     alert_type = models.CharField(max_length=64)
     alert_desc = models.CharField(max_length=256)
     alert_status = models.CharField(max_length=32)
+    group_name = models.CharField(max_length=256, default='slac_GISMO')
 
     def __str__(self):
         return self.alert_time + ':' + self.alert_type
@@ -82,3 +84,16 @@ class db_opt_session(models.Model):# for optimization, every 5 min
     def __str__(self):
         return self.session_id + ',' + self.group_name
 
+
+class db_notification(models.Model):
+    email = models.CharField(max_length=256)
+    yellow_load = models.BooleanField(default=False)
+    red_load = models.BooleanField(default=False)
+    telecomm_alert = models.BooleanField(default=False)
+    group_name = models.CharField(max_length=256, default='slac_GISMO')
+
+    def __str__(self):
+        return self.email
+    
+    class Meta:
+        unique_together=("email","group_name")
