@@ -1,0 +1,304 @@
+///////////////////////////////////////////////////////
+///////////////////////////////////////////////////////
+
+
+///////////////////////////////////////////////////////
+//
+// DEVINE Model with EV loads
+// Copyright (C) 2016, Stanford University
+// Author: gcezar@slac.stanford.edu
+// Site: 1625 Plymouth Garage
+///////////////////////////////////////////////////////
+
+//
+// Read the configuration file for this system
+// Assumes the model is run from parent of model folder
+//
+
+
+#include "config/default.glm"
+#define CONFIGFILE=config/default.glm
+#ifexist config/local.glm
+#include "config/local.glm"
+#set CONFIGFILE=config/local.glm
+#endif
+#set suppress_repeat_messages=TRUE
+#ifdef TIMEZONE
+
+clock {
+	timezone ${TIMEZONE};
+#ifdef STARTTIME
+	starttime ${STARTTIME};
+#endif
+#ifdef STOPTIME
+	stoptime ${STOPTIME};
+#endif
+}
+
+#else
+#error TIMEZONE is not specified in ${CONFIGFILE}
+#endif // TIMEZONE
+
+#set randomseed=5
+
+#ifdef CONTROL_TYPE
+#print "CONTROL IS ENABLED"
+module EV_controls;
+#endif
+///////////////////////////////////////////////////////
+//
+// WEATHER
+//
+///////////////////////////////////////////////////////
+#ifexist data/${WEATHER}
+module climate;
+object climate {
+        name weather;
+        tmyfile "data/${WEATHER}";
+        interpolate QUADRATIC;
+}
+#else
+#error WEATHER is not specified in ${CONFIGFILE}
+#endif // exist WEATHER
+
+module generators;
+
+module powerflow{
+	solver_method FBS;
+}
+module tape;
+
+//////////////////////////////////
+/// CONFIGURATIONS ///
+
+/// Lines /// BEGIN
+object overhead_line_conductor {
+	name olc301c;	//336,400 26/7 ACSR
+	geometric_mean_radius 0.0244;
+	resistance 0.306;
+	diameter 0.721;
+}
+
+object overhead_line_conductor {
+	name olc301n;	//4/0 6/1 ACSR
+	geometric_mean_radius 0.00814;
+	resistance 0.592;
+	diameter 0.563;
+}
+object line_configuration {
+	name lc301;
+	conductor_A olc301c;
+	conductor_B olc301c;
+	conductor_C olc301c;
+	conductor_N olc301n;
+	spacing ls500301;
+}
+//Line spacings
+//ABCN
+object line_spacing {
+	name ls500301;
+	distance_AB 2.5;
+	distance_AC 7.0;
+	distance_BC 4.5;
+	distance_CN 5.0;
+	distance_AN 5.65685424949;
+	distance_BN 4.27200187266;
+	distance_AE 28.0;
+	distance_BE 28.0;
+	distance_CE 28.0;
+	distance_NE 24.0;
+}
+
+object line_configuration {
+    name ug_1600;
+    conductor_A ug_conduct_1600;
+	conductor_B ug_conduct_1600;
+	conductor_C ug_conduct_1600;
+	conductor_N ug_conduct_1600;
+	spacing ls500301;
+}
+
+object underground_line_conductor {
+	name ug_conduct_1600;
+	outer_diameter 1.980000;
+	conductor_gmr 0.036800;
+	conductor_diameter 1.150000;
+	conductor_resistance 0.105000;
+	neutral_gmr 0.003310;
+	neutral_resistance 5.903000;
+	neutral_diameter 0.102000;
+	neutral_strands 20.000000;
+	shield_gmr 0.000000;
+	shield_resistance 0.000000;
+}
+
+/// Lines /// END
+
+/// Regulators /// BEGIN
+object regulator_configuration {
+	name rc502;
+	connect_type WYE_WYE;
+	band_center 480.000;
+	band_width 20.0;
+	time_delay 30.0;
+	raise_taps 16;
+	lower_taps 16;
+	current_transducer_ratio 50;
+	power_transducer_ratio 20;
+	compensator_r_setting_A 0.4;
+	compensator_x_setting_A 0.4;
+	CT_phase "A";
+	PT_phase "A";
+	regulation 0.10;
+	Control OUTPUT_VOLTAGE;
+	Type A;
+	tap_pos_A -1;
+	tap_pos_B 0;
+	tap_pos_C 0;
+}
+
+/// Regulators /// END
+
+/// Transformers /// BEGIN
+object transformer_configuration {
+    	name levelP3_transformer_config;
+    	connect_type DELTA_WYE;
+     	install_type PADMOUNT;
+     	primary_voltage 480;
+     	secondary_voltage 208;
+     	power_rating 0.5 MVA;
+     	impedance 0.00033+0.0022j;
+}
+
+/// Transformers /// END
+
+
+/// NETWORK /// START
+
+object meter {
+	name bulk_node;
+	nominal_voltage 480 V;
+	phases ABCN;
+	bustype SWING;
+	object recorder {
+		property measured_real_power[kW], measured_reactive_power[kVAr];
+		file "output/bulk_node.csv";
+		interval 1h;    // Change interval for recording
+	};
+}
+
+object meter {
+	name main_node;
+	nominal_voltage 480 V;
+	phases ABCN;
+}
+
+object underground_line {
+	name main_line;
+	phases ABCN;
+	from bulk_node;
+	to main_node;
+	length 50 ft;
+	configuration ug_1600;
+//	object recorder {
+//		property power_losses.real;
+//		file "output/line_losses/line_losses_${RUN_NAME}.csv";
+//		interval 1h;
+//	};
+}
+
+object regulator {
+	name main_reg;
+	phases ABCN;
+	from main_node;
+	to main_node_reg;
+	configuration rc502;
+	sense_node main_node_reg;
+}
+
+object meter {
+	name main_node_reg;
+	nominal_voltage 480 V;
+	phases ABCN;
+}
+
+object underground_line {
+	name main_node_2_levelP3_line;
+	phases ABCN;
+	from main_node_reg;
+	to levelP3_transformer_meter_pri;
+	length 50 ft;
+	configuration ug_1600;   // Need to change configuration file
+}
+
+object meter {
+	name levelP3_transformer_meter_pri;
+	nominal_voltage 480 V;
+	phases ABCN;
+//	object recorder {
+//	    property measured_real_power[kW], measured_reactive_power[kVAr];
+//	    file "output/levelP3_power.csv";
+//		interval -1;
+//	};
+}
+
+object transformer {
+    name levelP3_transformer;
+    from levelP3_transformer_meter_pri;
+    to levelP3_transformer_meter_sec;
+    phases ABCN;
+    configuration levelP3_transformer_config;
+}
+
+
+object meter {
+	name levelP3_transformer_meter_sec;
+	nominal_voltage 208 V;
+	phases ABCN;
+	object recorder {
+	    property measured_real_power[kW], measured_reactive_power[kVAr];
+	    file "output/levelP3_power.csv";
+		interval -1;
+	};
+}
+
+object underground_line {
+	name levelP3_line;
+	phases ABCN;
+	from levelP3_transformer_meter_sec;
+	to levelP3_4lgb_meter;
+	length 430 ft;
+	configuration ug_1600;   // Need to change configuration file
+}
+
+object meter {
+	name levelP3_4lgb_meter;
+	nominal_voltage 208 V;
+	phases ABCN;
+	object recorder {
+	    property measured_real_power[kW], measured_reactive_power[kVAr];
+	    file "output/levelP3_power.csv";
+		interval -1;
+	};
+}
+
+////TEST
+object load {
+     parent levelP3_4lgb_meter;
+     name load_1;
+     nominal_voltage 208;
+     phases ABC;
+	constant_power_A 200.481+58.342j kVA;
+}
+
+object load {
+     parent levelP3_4lgb_meter;
+     name load_2;
+     nominal_voltage 208;
+     phases ABC;
+	constant_power_B 100.481+50.342j kVA;
+}
+
+////////////
+
+// use python for loads
