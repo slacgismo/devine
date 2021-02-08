@@ -27,6 +27,7 @@ class Grid(Generator):
         cost += cvx.max(power[self.rate_d['max_peak_demand_ind'][0]]) * self.rate_d['max_peak_demand']
         cost += cvx.max(power[self.rate_d['max_part_peak_demand_ind'][0]]) * self.rate_d['max_part_peak_demand']
         cost = cvx.reshape(cost, (1, S))
+        # cost = np.zeros(96)
         return cost
 
 class Transformer(Device):
@@ -73,11 +74,18 @@ def charge_max(index, arrival_time, departure_time, limit_kw):
 
 start = pd.Timestamp("2020-03-09 00:00", tz="US/Pacific")  # Monday
 index = pd.date_range(start, start + pd.DateOffset(hours=24), freq="15min")[:-1]
-names = ["Alice", "Bob", "Carol"]
+names = ["EV1", "EV2", "EV3", "EV4", "EV5", "EV6", "EV7", "EV8", "EV9", "EV10"]
 departures = [
-    pd.Timestamp("2020-03-09 17:00", tz="US/Pacific"),
-    pd.Timestamp("2020-03-09 17:45", tz="US/Pacific"),
-    pd.Timestamp("2020-03-09 11:00", tz="US/Pacific"),
+    pd.Timestamp("2020-03-09 11:17", tz="US/Pacific"),
+    pd.Timestamp("2020-03-09 17:44", tz="US/Pacific"),
+    pd.Timestamp("2020-03-09 16:22", tz="US/Pacific"),
+    pd.Timestamp("2020-03-09 17:19", tz="US/Pacific"),
+    pd.Timestamp("2020-03-09 17:20", tz="US/Pacific"),
+    pd.Timestamp("2020-03-09 12:23", tz="US/Pacific"),
+    pd.Timestamp("2020-03-09 13:38", tz="US/Pacific"),
+    pd.Timestamp("2020-03-09 14:42", tz="US/Pacific"),
+    pd.Timestamp("2020-03-09 16:28", tz="US/Pacific"),
+    pd.Timestamp("2020-03-09 19:01", tz="US/Pacific")
 ]
 
 
@@ -142,35 +150,98 @@ index = pd.date_range(start, start + pd.DateOffset(hours=24), freq="15min")[:-1]
 
 vehicles = [
     EV(
-        name="Alice", # UserID from CP
-        departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 17:00")),
+        name="EV1", # UserID from CP
+        departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 12:00")),
         charge_max=charge_max(
-            index, pd.Timestamp("2020-03-09 08:00"), pd.Timestamp("2020-03-09 17:00"), limit_kw=6.6)[None].transpose(),
+            index, pd.Timestamp("2020-03-09 08:11"), pd.Timestamp("2020-03-09 11:17"), limit_kw=6.6)[None].transpose(),
         # charge_max=6.6,
         energy_init=23.0,
-        energy_final=75.0,
+        energy_final=35.8,
     ),
     EV(
-        name="Bob",
-        departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 17:45")),
+        name="EV2",
+        departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 17:00")),
         charge_max=charge_max(
-            index, pd.Timestamp("2020-03-09 09:00"), pd.Timestamp("2020-03-09 17:45"), limit_kw=6.6)[None].transpose(),
+            index, pd.Timestamp("2020-03-09 08:45"), pd.Timestamp("2020-03-09 17:44"), limit_kw=6.6)[None].transpose(),
         # charge_max=6.6,
         energy_init=20.0,
-        energy_final=50.0,
+        energy_final=55.0,
     ),
     EV(
-        name="Carol",
-        departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 11:00")),
+        name="EV3",
+        departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 16:30")),
         charge_max=charge_max(
-            index, pd.Timestamp("2020-03-09 08:00"), pd.Timestamp("2020-03-09 11:00"), limit_kw=3.3)[None].transpose(),
+            index, pd.Timestamp("2020-03-09 08:54"), pd.Timestamp("2020-03-09 16:22"), limit_kw=6.6)[None].transpose(),
         # charge_max=3.3,
         energy_init=0.0,
         energy_final=8.8,
     ),
+EV(
+        name="EV4",
+        departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 17:00")),
+        charge_max=charge_max(
+            index, pd.Timestamp("2020-03-09 09:00"), pd.Timestamp("2020-03-09 17:19"), limit_kw=6.6)[None].transpose(),
+        # charge_max=3.3,
+        energy_init=0.0,
+        energy_final=13.8,
+    ),
+EV(
+        name="EV5",
+        departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 17:00")),
+        charge_max=charge_max(
+            index, pd.Timestamp("2020-03-09 09:12"), pd.Timestamp("2020-03-09 17:20"), limit_kw=6.6)[None].transpose(),
+        # charge_max=3.3,
+        energy_init=0.0,
+        energy_final=10.5,
+    ),
+EV(
+        name="EV6",
+        departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 13:00")),
+        charge_max=charge_max(
+            index, pd.Timestamp("2020-03-09 09:37"), pd.Timestamp("2020-03-09 12:23"), limit_kw=6.6)[None].transpose(),
+        # charge_max=3.3,
+        energy_init=0.0,
+        energy_final=6.4,
+    ),
+EV(
+        name="EV7",
+        departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 15:00")),
+        charge_max=charge_max(
+            index, pd.Timestamp("2020-03-09 09:45"), pd.Timestamp("2020-03-09 13:38"), limit_kw=6.6)[None].transpose(),
+        # charge_max=3.3,
+        energy_init=0.0,
+        energy_final=21.2,
+    ),
+EV(
+        name="EV8",
+        departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 15:00")),
+        charge_max=charge_max(
+            index, pd.Timestamp("2020-03-09 10:23"), pd.Timestamp("2020-03-09 14:42"), limit_kw=6.6)[None].transpose(),
+        # charge_max=3.3,
+        energy_init=0.0,
+        energy_final=11.8,
+    ),
+EV(
+        name="EV9",
+        departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 17:00")),
+        charge_max=charge_max(
+            index, pd.Timestamp("2020-03-09 09:57"), pd.Timestamp("2020-03-09 16:28"), limit_kw=6.6)[None].transpose(),
+        # charge_max=3.3,
+        energy_init=0.0,
+        energy_final=14.9,
+    ),
+EV(
+        name="EV10",
+        departure_prob=departure_prob(index, pd.Timestamp("2020-03-09 19:10")),
+        charge_max=charge_max(
+            index, pd.Timestamp("2020-03-09 10:25"), pd.Timestamp("2020-03-09 19:01"), limit_kw=6.6)[None].transpose(),
+        # charge_max=3.3,
+        energy_init=0.0,
+        energy_final=11.2,
+    ),
 ]
 grid = Grid(energy_rate=energy_rate(index), demand_rate=demand_rate(index))
-transformer = Transformer(power_max=10)
+transformer = Transformer(power_max=17)
 
 net_v = Net([v.terminals[0] for v in vehicles] + [transformer.terminals[0]], name="EVSE")
 net_g = Net([grid.terminals[0], transformer.terminals[1]], name="Grid")

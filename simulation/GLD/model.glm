@@ -6,7 +6,7 @@
 //
 // DEVINE Model with EV loads
 // Copyright (C) 2016, Stanford University
-// Author: aivanova@slac.stanford.edu
+// Author: gcezar@slac.stanford.edu
 //
 ///////////////////////////////////////////////////////
 
@@ -75,7 +75,7 @@ object meter {
 	object recorder {
 		property measured_real_power[kW], measured_reactive_power[kVAr]; 
 		file "output/feeder_power.csv";
-		interval 1h;
+		interval 1h;    // Change interval for recording
 	};
 }
 

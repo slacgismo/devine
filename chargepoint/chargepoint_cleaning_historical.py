@@ -3,8 +3,8 @@ import pandas as pd
 import pickle
 from datetime import datetime, date
 
-file_path = 's3://devine.fielddemo.data/SLAC/raw/SLAC-Session-Details-Meter-with-Summary-2018.csv'
-file_name = 'SLAC-Session-Details-Meter-with-Summary-2018.csv'
+file_path = 's3://devine.fielddemo.data/Google/raw/MTV-46-2018 Session-Details-Meter-with-Summary.csv'
+file_name = 'MTV-46-2018 Session-Details-Meter-with-Summary.csv'
 
 print('Reading file')
 data1 = pd.read_csv(file_path)
@@ -95,8 +95,7 @@ def apply_transforms(data, col, transforms, names, drop_col=False):
     return data
 
 
-def transform_start_datetimes(data):
-    col = 'Start Time'
+def transform_start_datetimes(data, col='Start Time'):
 
     l1 = len(data)
     # remove sessions where timestamp is not a string
@@ -126,4 +125,6 @@ print('Total loss to cleaning: ', (
             cleaning_dict['Start Time Format']))
 
 data1.reset_index(drop=True, inplace=True)
-# data1.to_csv('s3://devine.fielddemo.data/SLAC/clean/'+file_name, index=False)
+# data1.to_csv('s3://devine.fielddemo.data/GOOGLE/clean/'+file_name, index=False)
+data1.to_csv('/Users/gcezar/Downloads/clean_'+file_name, index=False)
+print('END')

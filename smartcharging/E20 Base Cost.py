@@ -27,6 +27,7 @@ class Grid(Generator):
         cost += cvx.max(power[self.rate_d['max_peak_demand_ind'][0]]) * self.rate_d['max_peak_demand']
         cost += cvx.max(power[self.rate_d['max_part_peak_demand_ind'][0]]) * self.rate_d['max_part_peak_demand']
         cost = cvx.reshape(cost, (1, S))
+        cost = np.zeros(96)
         return cost
 
 class EV(Storage):
@@ -71,28 +72,84 @@ index = pd.date_range(start, start + pd.DateOffset(hours=24), freq="15min")[:-1]
 
 vehicles = [
     EV(
-        name="Alice",
+        name="EV1", # UserID from CP
         charge_max=charge_max(
-            index, pd.Timestamp("2020-03-09 08:00"), pd.Timestamp("2020-03-09 17:00"), limit_kw=6.6
-        ),
+            index, pd.Timestamp("2020-03-09 08:11"), pd.Timestamp("2020-03-09 11:17"), limit_kw=6.6),
+        # charge_max=6.6,
         energy_init=23.0,
-        energy_final=75.0,
+        energy_final=35.8,
     ),
     EV(
-        name="Bob",
+        name="EV2",
         charge_max=charge_max(
-            index, pd.Timestamp("2020-03-09 09:00"), pd.Timestamp("2020-03-09 17:45"), limit_kw=6.6
-        ),
+            index, pd.Timestamp("2020-03-09 08:45"), pd.Timestamp("2020-03-09 17:44"), limit_kw=6.6),
+        # charge_max=6.6,
         energy_init=20.0,
-        energy_final=50.0,
+        energy_final=55.0,
     ),
     EV(
-        name="Carol",
+        name="EV3",
         charge_max=charge_max(
-            index, pd.Timestamp("2020-03-09 06:00"), pd.Timestamp("2020-03-09 11:00"), limit_kw=3.3
-        ),
+            index, pd.Timestamp("2020-03-09 08:54"), pd.Timestamp("2020-03-09 16:22"), limit_kw=6.6),
+        # charge_max=3.3,
         energy_init=0.0,
         energy_final=8.8,
+    ),
+    EV(
+        name="EV4",
+        charge_max=charge_max(
+            index, pd.Timestamp("2020-03-09 09:00"), pd.Timestamp("2020-03-09 17:19"), limit_kw=6.6),
+        # charge_max=3.3,
+        energy_init=0.0,
+        energy_final=13.8,
+    ),
+    EV(
+        name="EV5",
+        charge_max=charge_max(
+            index, pd.Timestamp("2020-03-09 09:12"), pd.Timestamp("2020-03-09 17:20"), limit_kw=6.6),
+        # charge_max=3.3,
+        energy_init=0.0,
+        energy_final=10.5,
+    ),
+    EV(
+        name="EV6",
+        charge_max=charge_max(
+            index, pd.Timestamp("2020-03-09 09:37"), pd.Timestamp("2020-03-09 12:23"), limit_kw=6.6),
+        # charge_max=3.3,
+        energy_init=0.0,
+        energy_final=6.4,
+    ),
+    EV(
+        name="EV7",
+        charge_max=charge_max(
+            index, pd.Timestamp("2020-03-09 09:45"), pd.Timestamp("2020-03-09 13:38"), limit_kw=6.6),
+        # charge_max=3.3,
+        energy_init=0.0,
+        energy_final=21.2,
+    ),
+    EV(
+        name="EV8",
+        charge_max=charge_max(
+            index, pd.Timestamp("2020-03-09 10:23"), pd.Timestamp("2020-03-09 14:42"), limit_kw=6.6),
+        # charge_max=3.3,
+        energy_init=0.0,
+        energy_final=11.8,
+    ),
+    EV(
+        name="EV9",
+        charge_max=charge_max(
+            index, pd.Timestamp("2020-03-09 09:57"), pd.Timestamp("2020-03-09 16:28"), limit_kw=6.6),
+        # charge_max=3.3,
+        energy_init=0.0,
+        energy_final=14.9,
+    ),
+    EV(
+        name="EV10",
+        charge_max=charge_max(
+            index, pd.Timestamp("2020-03-09 10:25"), pd.Timestamp("2020-03-09 19:01"), limit_kw=6.6),
+        # charge_max=3.3,
+        energy_init=0.0,
+        energy_final=11.2,
     ),
 ]
 grid = Grid(energy_rate=energy_rate(index), demand_rate=demand_rate(index))
@@ -117,51 +174,3 @@ plt.show()
 
 avg_price = np.sum((power.sum(axis=1) * energy_rate(index))) / np.sum(power.sum(axis=1))
 print("Average price: $%.04f / kWh" % avg_price)
-
-
-# rate_energy_peak = 0.16997
-# rate_energy_partpeak = 0.12236
-# rate_energy_offpeak = 0.09082
-# rate_demand_peak = 21.23
-# rate_demand_partpeak = 5.85
-# rate_demand_overall = 19.10
-#
-# energy_prices = np.concatenate((np.repeat(rate_energy_offpeak, int(8.5*4)), np.repeat(rate_energy_partpeak, int(3.5*4)),
-#                 np.repeat(rate_energy_peak, int(6*4)), np.repeat(rate_energy_partpeak, int(3.5*4)),
-#                 np.repeat(rate_energy_offpeak, int(2.5*4))))
-#
-# peak_inds = np.arange(int(12*4), int(18*4))
-# partpeak_inds = np.concatenate((np.arange(int(8.5*4), int(12*4)), np.arange(int(18*4), int(21.5*4))))
-# offpeak_inds = np.concatenate((np.arange(0, int(8.5*4)), np.arange(int(21.5*4), int(24*4))))
-
-# schedule = cvx.Variable((96, num_sessions))
-# obj = cvx.matmul(cvx.sum(schedule, axis=1),  energy_prices.reshape((np.shape(energy_prices)[0], 1)))
-# obj += rate_demand_overall*cvx.max(cvx.sum(schedule, axis=1))
-# obj += rate_demand_peak*cvx.max(cvx.sum(schedule[peak_inds, :], axis=1))
-# obj += rate_demand_partpeak*cvx.max(cvx.sum(schedule[partpeak_inds, :], axis=1))
-#
-# constraints = [schedule >= 0]
-# for i in range(num_sessions):
-#     constraints += [schedule[:, i] <= np.maximum(np.max(power[:, i]), charge_rate)]
-#     if departure_inds[i] >= arrival_inds[i]:
-#         if arrival_inds[i] > 0:
-#             constraints += [schedule[np.arange(0, int(arrival_inds[i])), i] <= 0]
-#         if departure_inds[i] < 96:
-#             constraints += [schedule[np.arange(int(departure_inds[i]), 96), i] <= 0]
-#     else:
-#         constraints += [schedule[np.arange(int(departure_inds[i]), int(arrival_inds[i])), i] <= 0]
-#
-# energies = 0.25*np.sum(power, axis=0)
-# max_energies = np.zeros((num_sessions, ))
-# for i in range(num_sessions):
-#     if departure_inds[i] >= arrival_inds[i]:
-#         max_energies[i] = 0.25*charge_rate*(departure_inds[i]-arrival_inds[i])
-#     else:
-#         max_energies[i] = 0.25*charge_rate*((departure_inds[i])+(96-arrival_inds[i]))
-# where_violation = np.where((max_energies-energies)<0)[0]
-# print('Energy violation for ',len(where_violation),' of the sessions.')
-# energies[where_violation] = max_energies[where_violation]
-# constraints += [0.25*cvx.sum(schedule, axis=0)==energies]
-
-# prob = cvx.Problem(cvx.Minimize(obj), constraints)
-# result = prob.solve(cvx.MOSEK)
