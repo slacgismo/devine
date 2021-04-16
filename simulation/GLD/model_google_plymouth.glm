@@ -25,6 +25,13 @@
 #set suppress_repeat_messages=TRUE
 #ifdef TIMEZONE
 
+global int32 SEQ_EVSE_L3_AB 0;
+global int32 SEQ_EVSE_L3_AC 11;
+global int32 SEQ_EVSE_L3_BC 20;
+global int32 COUNT_AB 11;
+global int32 COUNT_AC 9;
+global int32 COUNT_BC 10;
+
 clock {
 	timezone ${TIMEZONE};
 #ifdef STARTTIME
@@ -162,7 +169,7 @@ object regulator_configuration {
 /// Transformers /// BEGIN
 object transformer_configuration {
     	name levelP3_transformer_config;
-    	connect_type DELTA_WYE;
+    	connect_type DELTA_GWYE;
      	install_type PADMOUNT;
      	primary_voltage 480;
      	secondary_voltage 208;
@@ -266,13 +273,20 @@ object underground_line {
 	name levelP3_line;
 	phases ABCN;
 	from levelP3_transformer_meter_sec;
-	to levelP3_4lgb_meter;
+	to levelP3_3lga_meter;
 	length 430 ft;
 	configuration ug_1600;   // Need to change configuration file
 }
 
+object impedance_dump {
+    group 'class=underground_line';
+    filename 'test_cable.xml';
+    runtime '1609236000';
+
+  }
+
 object meter {
-	name levelP3_4lgb_meter;
+	name levelP3_3lga_meter;
 	nominal_voltage 208 V;
 	phases ABCN;
 	object recorder {
@@ -283,22 +297,33 @@ object meter {
 }
 
 ////TEST
-object load {
-     parent levelP3_4lgb_meter;
-     name load_1;
-     nominal_voltage 208;
-     phases ABC;
-	constant_power_A 200.481+58.342j kVA;
+object load:..${COUNT_AB} {
+	name `load_ev3_{SEQ_EVSE_L3_AB:INC}`;
+	groupid ev_AB;
+	parent levelP3_3lga_meter;
+	phases ABN;
+	constant_power_A 6.000000+1.000000j;
+	nominal_voltage 208;
+	#print name;
 }
 
-object load {
-     parent levelP3_4lgb_meter;
-     name load_2;
-     nominal_voltage 208;
-     phases ABC;
-	constant_power_B 100.481+50.342j kVA;
+object load:..${COUNT_AC} {
+	name `load_ev3_{SEQ_EVSE_L3_AC:INC}`;
+	groupid ev_AC;
+	parent levelP3_3lga_meter;
+	phases ACN;
+	constant_power_A 6.000000+1.000000j;
+	nominal_voltage 208;
+	#print name;
 }
 
-////////////
+object load:..${COUNT_BC} {
+	name `load_ev3_{SEQ_EVSE_L3_BC:INC}`;
+	groupid ev_BC;
+	parent levelP3_3lga_meter;
+	phases BCN;
+	constant_power_A 6.000000+1.000000j;
+	nominal_voltage 208;
+}
 
 // use python for loads
