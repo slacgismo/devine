@@ -9,7 +9,7 @@ To run the simulation: `docker run -itv [path to model file]:/model slacgismo/gr
 
 This will create a new linux container based on the image specified. You will now be in the /tmp folder of the container 
 
-Traverse to /model folder (`cd /model`)
+Traverse to /model folder (`cd ..` followed by `cd /model`)
 
 To run the simulation...
 
