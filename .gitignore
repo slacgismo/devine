@@ -153,7 +153,7 @@ gridlabd.*
 /chargepoint/test-temp.py
 
 # Google site 
-/Users/gcezar/Documents/SLAC/Projects/DEVINE/devine/simulation/GLD/Google/
+/simulation/GLD/Google/
 
 # DB credentials
-/Users/gcezar/Documents/SLAC/Projects/DEVINE/devine/simulation/GLD/config/secrets.py
+/simulation/GLD/config/secrets.py
