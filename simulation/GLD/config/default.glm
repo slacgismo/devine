@@ -1,6 +1,6 @@
 // this file is used if local.glm is not found
 #define TIMEZONE=${TIMEZONE:-US/CA/Los Angeles}
 #define WEATHER=${WEATHER:-CA-San_Jose_Intl_Ap.tmy3}
-#define STARTTIME=${STARTTIME:-2020-01-01 00:00:00}
-#define STOPTIME=${STOPTIME:-2021-01-01 00:00:00}
+#define STARTTIME=${STARTTIME:-2019-07-29 00:00:00}
+#define STOPTIME=${STOPTIME:-2019-07-29 23:59:59}
 #define COUNT=${COUNT:-20} // Number of EV stations
