@@ -154,6 +154,7 @@ gridlabd.*
 
 # Google site 
 /simulation/GLD/Google/
+/simulation/GLD/model_google_plymouth.glm
 
 # DB credentials
 /simulation/GLD/config/secrets.py
