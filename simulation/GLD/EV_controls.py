@@ -2,17 +2,18 @@ import re
 import json
 from datetime import datetime
 import pandas as pd
-import
-
+# needs to add secrets
+# import .config.secrets import
+# import mysql.connector
 # For GLD
-try:
-	import mysql.connector
-except:
-	import pip
-	# pip.main(["import","mysql_connector"])
-	pip.main(["import", "mysql-connector-python"])
-	import mysql.connector
-
+# try:
+# 	import mysql.connector
+# except:
+# 	import pip
+# 	# pip.main(["import","mysql_connector"])
+# 	pip.main(["import", "mysql-connector-python"])
+# 	import mysql.connector
+from mysql import connector
 
 # Creating DB connection
 
@@ -28,6 +29,7 @@ except:
 #     cursor = conn.cursor()
 # except Exception as e:
 #     print(e)
+
 
 
 
