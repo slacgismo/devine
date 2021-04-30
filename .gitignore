@@ -160,4 +160,4 @@ gridlabd.*
 /simulation/GLD/model_google_plymouth.glm
 
 # DB credentials
-/simulation/GLD/config/secrets.py
+/simulation/GLD/secrets.py

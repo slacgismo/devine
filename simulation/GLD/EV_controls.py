@@ -3,34 +3,20 @@ import json
 from datetime import datetime
 import pandas as pd
 # needs to add secrets
-# import .config.secrets import
-# import mysql.connector
-# For GLD
-# try:
-# 	import mysql.connector
-# except:
-# 	import pip
-# 	# pip.main(["import","mysql_connector"])
-# 	pip.main(["import", "mysql-connector-python"])
-# 	import mysql.connector
-from mysql import connector
+import secrets
+import mysql.connector
 
-# Creating DB connection
-
-# # Postgres
-# try:
-#     #establishing the connection
-#     conn = psycopg2.connect(
-#        database="google", user='postgres', password='1qaz@WSX3e', host='127.0.0.1', port='5432'
-#     )
-#     conn.autocommit = True
-#
-#     #Creating a cursor object using the cursor() method
-#     cursor = conn.cursor()
-# except Exception as e:
-#     print(e)
-
-
+try:
+	mydb = mysql.connector.connect(
+		host='docker.for.mac.localhost',
+		user=secrets.db_user,
+		port='3306',
+		passwd=secrets.db_password,
+		database=secrets.db_name,
+		auth_plugin='mysql_native_password')
+except Exception as e:
+	print("Error in DB connection")
+	print(e)
 
 
 mycursor = mydb.cursor(buffered=True)
