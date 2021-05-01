@@ -28,6 +28,9 @@ query_db_station_log = "INSERT INTO db_station_log(station_id, port_number, grou
 					   "shed_state, port_load_kWh, allowed_power_kW, port_power_kW, recent_user, timedate, exception_flag) " \
 					   "VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
 
+query_update = "UPDATE db_station_status_rt SET status = %s, port_power_kW = %s, port_load_kWh = %s, user_id = %s," \
+			   "arrival = %s, timedate = %s  WHERE station_id = %s"
+
 charging_events = pd.read_pickle('Google/Plymouth/charging_events')
 pattern = re.compile("GOOGLE / MTV-1625-3")
 
@@ -89,6 +92,8 @@ def on_commit(t):
 			recent_user = mask_stations['User Id'][ind]
 			timedate = ts
 			exception_flag = False
+
+			# Checking port status: available or occupied
 			if not pd.isna(mask_stations['Plug Disconnect Time'][ind]):
 				port_status = '0'
 				print('Station', mask_stations['EVSE ID'][ind], '/', mask_stations['Port'][ind], 'is available')
@@ -96,19 +101,42 @@ def on_commit(t):
 				port_status = '1'
 				print('Station', mask_stations['EVSE ID'][ind], '/', mask_stations['Port'][ind], 'is occupied')
 
+			# Checking for arrival
+			if not pd.isna(mask_stations['Plug Connect Time'][ind]):
+				arrival = '1'
+				print('Station', mask_stations['EVSE ID'][ind], '/', mask_stations['Port'][ind], 'has just arrived')
+			else:
+				arrival = '0'
+				print('Station', mask_stations['EVSE ID'][ind], '/', mask_stations['Port'][ind], 'has been connected')
+
 			# These values will come from the algorithm
 			gridlabd.set_value(station_id, "constant_power_A", str(port_power))
 			power_val_A = gridlabd.get_value(station_id, "constant_power_A")
 
+			# Saving log information
 			try:
-				vals = (station_id, port_number, group_name, station_load, port_status, shed_state, port_load, allowed_power,
+				vals_log = (station_id, port_number, group_name, station_load, port_status, shed_state, port_load, allowed_power,
 						port_power, recent_user, timedate, exception_flag)
-				mycursor.execute(query_db_station_log, vals)
-				print('Succesfull values insertion in DB')
+				mycursor.execute(query_db_station_log, vals_log)
+				mydb.commit()
+				print('Succesfull values insertion in DB log')
 			except Exception as e:
-				print('db write error:')
+				print('db_log write error:')
 				print('Error: ', e)
-			mydb.commit()
+
+			try:
+				vals_rt = (port_status, port_power, port_load, recent_user, arrival, timedate, station_id)
+				mycursor.execute(query_update, vals_rt)
+				mydb.commit()
+				print('Successfull update: ', vals_rt)
+			except Exception as e:
+				print('db_rt update error:')
+				print('Error: ', e)
+
+		'''
+		1 - Convert data from DB, after commit, to algorithm's inputs variables
+		2 - Write algorithm as a module to be called in this function
+		'''
 	return True
 
 			# # print('Station/Port:', mask_stations['EVSE ID'][ind], '/', mask_stations['Port'][ind],':',power_val_A)
