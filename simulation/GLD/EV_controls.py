@@ -2,10 +2,12 @@ import re
 import json
 from datetime import datetime
 import pandas as pd
+import numpy as np
 # needs to add secrets
 import secrets
 import mysql.connector
 
+# SETTING UP THE DATABASE COMMUNICATION AND ALL REQUIREMENTS
 try:
 	mydb = mysql.connector.connect(
 		host='docker.for.mac.localhost',
@@ -21,6 +23,10 @@ except Exception as e:
 
 mycursor = mydb.cursor(buffered=True)
 
+query_n_stations = "SELECT COUNT(*) FROM db_stations"
+n_stations = mycursor.execute(query_n_stations)
+recent_departure = np.zeros(n_stations)
+
 # Definitions for on_commit:
 query_status = "INSERT INTO db_station_status_rt(station_id, port_number, status, port_power_kW, port_load_kWh, user_id, timedate) VALUES(%s, %s, %s, %s, %s, %s)"
 
@@ -34,7 +40,42 @@ query_update = "UPDATE db_station_status_rt SET status = %s, port_power_kW = %s,
 charging_events = pd.read_pickle('Google/Plymouth/charging_events')
 pattern = re.compile("GOOGLE / MTV-1625-3")
 
+query_status_rt = "SELECT status from db_station_status_rt ORDER BY id ASC"
+query_arrival_rt = "SELECT arrival from db_station_status_rt ORDER BY id ASC"
+query_evid_rt = "SELECT user_id from db_station_status_rt ORDER BY id ASC"
 
+def query_select(mycursor, query):
+	print('query: ', query)
+	try:
+		mycursor.execute(query)
+		db_data = np.asarray(mycursor.fetchall()).flatten()
+		db_data = db_data.astype(int)
+	except Exception as e:
+		print('Error: ', e)
+	return db_data
+
+# OPTIMIZATION FUNCTIONS
+# Pulling departure times based on historical data
+try:
+	dep_times = json.load(open('Google/Plymouth/data_dep_times.json'))
+except:
+	print('COULD NOT OPEN FILE')
+# Function to generate potential departure times
+def potential_dep_times(lowBound, uppBound, num_desired_time, increment=15):
+	sortedInterval = dep_times
+	filtered_data = []
+	minTime = (60 / increment) * lowBound + 1
+	maxTime = (60 / increment) * uppBound + 1
+	for user in sortedInterval:
+		for j in range(len(sortedInterval[user])):
+			if (sortedInterval[user][j][0] > minTime and sortedInterval[user][j][0] <= maxTime):
+				filtered_data.append(sortedInterval[user][j][1])
+	predictions = list()
+	for i in range(num_desired_time):
+		predictions.append(np.random.choice(filtered_data))
+	return predictions
+
+# INITIALIZING GLD SIMULATION
 def on_init(t):
 	# DO ON INITIALIZATION STUFF HERE
 	stations = json.load(open('Google/Plymouth/google_stations.json'))
@@ -73,11 +114,11 @@ def on_commit(t):
 
 	# This will eventually change when running optimization - need to understand what replaces the charging_events and
 	# iterate
-	mask_stations = charging_events[charging_events['Datetime'] == ts]
+	mask_stations = charging_events[charging_events['Datetime'] == ts] # getting information from field on what's happening at each station in this time
 	mask_stations.reset_index(drop=True, inplace=True)
 
 	for ind in mask_stations.index:
-		if pattern.search(mask_stations['gld_station_name'][ind]):
+		if pattern.search(mask_stations['gld_station_name'][ind]): # filtering stations for just GOOGLE-2
 			pass
 		else:
 			station_id = mask_stations['gld_station_name'][ind]
@@ -93,21 +134,25 @@ def on_commit(t):
 			timedate = ts
 			exception_flag = False
 
-			# Checking port status: available or occupied
+			# Checking port status: available (0) or occupied (1)
 			if not pd.isna(mask_stations['Plug Disconnect Time'][ind]):
 				port_status = '0'
-				print('Station', mask_stations['EVSE ID'][ind], '/', mask_stations['Port'][ind], 'is available')
+				# print('Station', mask_stations['EVSE ID'][ind], '/', mask_stations['Port'][ind], 'is available')
 			else:
 				port_status = '1'
-				print('Station', mask_stations['EVSE ID'][ind], '/', mask_stations['Port'][ind], 'is occupied')
+				'''TODO: if port status is occupied check departure times and remove if time has passed. If the there's
+				 no departure times generate one more'''
+				# print('Station', mask_stations['EVSE ID'][ind], '/', mask_stations['Port'][ind], 'is occupied')
 
 			# Checking for arrival
 			if not pd.isna(mask_stations['Plug Connect Time'][ind]):
 				arrival = '1'
+				'''TODO: implement function to generate potential dep_times (done) and add to db_station_status_rt'''
 				print('Station', mask_stations['EVSE ID'][ind], '/', mask_stations['Port'][ind], 'has just arrived')
+				print(potential_dep_times(np.maximum(ts.hour - 1, 0), np.minimum(ts.hour + 1, 24), 3))
 			else:
 				arrival = '0'
-				print('Station', mask_stations['EVSE ID'][ind], '/', mask_stations['Port'][ind], 'has been connected')
+				# print('Station', mask_stations['EVSE ID'][ind], '/', mask_stations['Port'][ind], 'has been connected')
 
 			# These values will come from the algorithm
 			gridlabd.set_value(station_id, "constant_power_A", str(port_power))
@@ -133,32 +178,32 @@ def on_commit(t):
 				print('db_rt update error:')
 				print('Error: ', e)
 
-		'''
-		1 - Convert data from DB, after commit, to algorithm's inputs variables
-		2 - Write algorithm as a module to be called in this function
-		'''
-	return True
+	'''
+	1 - Convert data from DB, after commit, to algorithm's inputs variables
+	2 - Write algorithm as a module to be called in this function
+	'''
+	'''
+	# num_EVs_charging - #current number of EVs plugged in at time t -> Get from "status" column in db_station_status_rt [number]
+	# num_arr_current - #current number of arrivals at time t -> Get from "arrival" column in db_station_status_rt [number]
+	# charger_occupy_array - #0 when empty, 1 when occupied, num_chargers x T array -> Get from "status" column in db_station_status_rt [array of chargers]
+	charger_occupy_EVid - #-1 when empty, EVid when occupied, num_chargers x T array -> Get from "user_id" column in db_station_status_rt [array of chargers]
+	EV_charger_assigned - #to which charger is the arrival assigned -> Get from "arrival" and "station_id" column in db_station_status_rt [array] 
+	arrival_number - #maps the EV number to arrival number -> Get from "arrival" and "user id" column in db_station_status_rt 
+	'''
 
-			# # print('Station/Port:', mask_stations['EVSE ID'][ind], '/', mask_stations['Port'][ind],':',power_val_A)
-			# if not pd.isna(mask_stations['Plug Disconnect Time'][ind]):
-			# 	# This gives station/port status available
-			# 	print('Station', mask_stations['EVSE ID'][ind], '/', mask_stations['Port'][ind], 'is available')
-			# 	try:
-			# 		vals = [mask_stations['gld_station_name'], '0']
-			# 		cursor.execute(query_status, vals)
-			# 		conn.commit()
-			# 	except Exception as e:
-			# 		print('Error in station available: ', e)
-			#
-			# else:
-			# 	# This sets station/port status to occupied
-			# 	print('Station is occupied')
-			# 	try:
-			# 		vals = [mask_stations['gld_station_name'], '0']
-			# 		cursor.execute(query_status, vals)
-			# 		conn.commit()
-			# 	except Exception as e:
-			# 		print('Error in station occupied: ', e)
+	# num_arr_current = np.sum(query_select(mycursor, query_arrival_rt))
+	# charger_occupy_array = query_select(mycursor, query_status_rt)
+	# num_EV_charging = np.sum(charger_occupy_array)
+	# charger_occupy_EVid = query_select(mycursor, query_evid_rt)
+
+
+
+	# T is the number of timestamps (Nate's simulation is 15min [96 slots], GLD is 1min [1440 slots])
+	T = 60*24
+
+
+
+	return True
 
 
 
