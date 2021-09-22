@@ -161,3 +161,6 @@ gridlabd.*
 
 # DB credentials
 /simulation/GLD/secrets.py
+
+# Certs
+/StanfordBYD/config.py
