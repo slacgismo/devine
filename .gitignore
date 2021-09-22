@@ -163,4 +163,5 @@ gridlabd.*
 /simulation/GLD/secrets.py
 
 # Certs
-/StanfordBYD/config.py
+app/devine/StanfordBYD/config.py
+app/devine/StanfordBYD/test_lambda.py
